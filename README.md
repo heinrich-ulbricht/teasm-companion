@@ -9,6 +9,7 @@ Created in lockdown times to counter code withdrawal. Playground for [C# 9](http
 Teasm Companion is like a new Teams client. It fetches your chats and chat messages (those you would normally see when clicking on the "Chat" icon in Microsoft Teams) and stores them locally.
 
 Teasm Companion retrieves the following data for any of your authenticated Teams accounts:
+
 * Chat messages (not all at once, but over time)
 * Some chat metadata
 * Information about chat participants
@@ -66,13 +67,14 @@ Teasm Companion also subscribes to chat notifications (_just like Teams does_) a
 ### Incremental Chat Updates
 
 Teasm Companion regularely checks for chats with new messages and gets only those messages. It retrieves the list of changed chats _just like Teams does it_ and updates them, leaving old chats untouched.
+
 ## You need an IMAP server
 
 Why IMAP? Because chat messages map pretty well to e-mails. There's a sender, a list of recipients, a message, attachments and so on. (Apparently there is a whole chat client out there [built on the basis of IMAP](https://delta.chat/en/).)
 
 And you get a proven user interface. Any e-mail client fits the purpose and allows to read, manage and search chat messages.
 
-Since Teasm Companion needs the [CONDSTORE](https://tools.ietf.org/html/rfc4551) IMAP capability to implement locking you have a reduced set of IMAP servers and services available with Dovecot being the most popular one. Have a look at the "[IMAP extensions and server support](https://www.imapwiki.org/Specs)" table to see all your options. 
+Since Teasm Companion needs the [CONDSTORE](https://tools.ietf.org/html/rfc4551) IMAP capability to implement locking you have a reduced set of IMAP servers and services available with Dovecot being the most popular one. Have a look at the "[IMAP extensions and server support](https://www.imapwiki.org/Specs)" table to see all your options.
 
 It's best to use a local Dovecot IMAP server as this is guaranteed to work well. There are plenty of Docker images out there giving you exactly that even on Windows. For example with [docker-imap-devel](https://github.com/antespi/docker-imap-devel) you get a working and lightweight server set up in no time.
 
@@ -105,23 +107,34 @@ Again, the IMAP configuration is the most important that must be set.
 
 ## Logging
 
-Teasm Companion comes with extensive logging. It is fun watching the notifications flow into the console as you interact within Teams. 
+Teasm Companion comes with extensive logging. It is fun watching the notifications flow into the console as you interact within Teams.
 
 The default log level is "Debug" which shows nearly everything the application does. Logs are shown in the console window and are also stored in the "logs" sub-directory. Log files are automatically removed after a couple of days.
 
 ## How do I run it?
 
-Clone the repo. Use Visual Studio or Visual Studio Code to build `TeasmCompanion`.
+Clone the repo. Use Visual Studio or Visual Studio Code to build `TeasmCompanion`. Then create and configure a `config.json` and run `TeasmCompanion.exe` (or `TeasmCompanion.dll` on Linux).
 
-Then create and configure a `config.json` and run `TeasmCompanion.exe` (or `TeasmCompanion.dll` on Linux).
+Windows:
+
+* Open solution in Visual Studio
+* Build Project `TeasmCompanion`
+* To run: start `TeasmCompanion.exe`
+
+Linux:
+
+* Open a terminal, switch to the cloned repo directory
+* `dotnet restore`
+* `dotnet build`
+* To run: `dotnet TeasmCompanion/bin/Debug/net5.0/TeasmCompanion.dll`
 
 ## Troubleshooting
 
 ### Teasm Companion cannot find a token for initial chat list retrieval
 
-Tokens for initial chat retrieval have a lifetime of about an hour and need to be renewed afterwarts. You can trigger renewal in your Teams client by switching to another tenant and back. You can also clear the cache of either the Teams client or your browser, then restart/reload the client. That should renew the token as well.
+Tokens for initial chat retrieval have a lifetime of about an hour and need to be renewed afterwards. You can trigger renewal in your Teams client by switching to another tenant and back. You can also clear the cache of either the Teams client or your browser, then restart/reload the client. That should renew the token as well.
 
-*Note: The tokens needed to get the actual chat messages per chat have a alonger lifetime of >1 day, so once the chat list has been retrieved you can let it run unattended for some time. The Teams clients might even renew this token from time to time automatically.* 
+*Note: The tokens needed to get the actual chat messages per chat have a alonger lifetime of >1 day, so once the chat list has been retrieved you can let it run unattended for some time. The Teams clients might even renew this token from time to time automatically.*
 
 ### Some e-mails seem empty - why?
 
