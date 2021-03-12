@@ -125,7 +125,7 @@ Linux:
 
 * Open a terminal, switch to the cloned repo directory
 * `dotnet restore`
-* `dotnet build`
+* `dotnet build --no-restore`
 * To run: `dotnet TeasmCompanion/bin/Debug/net5.0/TeasmCompanion.dll`
 
 ## Troubleshooting
@@ -138,7 +138,7 @@ Tokens for initial chat retrieval have a lifetime of about an hour and need to b
 
 ### Some e-mails seem empty - why?
 
-Configure your e-mail client to always show or prioritize HTML content. Some e-mails might come with empty "text" content while having only its "HTML" content set.
+Configure your e-mail client to always show or prioritize HTML content. Some e-mails might come with empty "text" content while having only their "HTML" content set.
 
 ## Disclaimer
 
