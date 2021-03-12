@@ -40,5 +40,8 @@ msbuild.wrn
 config.json
 config.*.json
 
-# visual Studio
+# Visual Studio
 launchSettings.json
+
+# VS Code Extensions
+.VSCodeCounter
