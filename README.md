@@ -113,12 +113,12 @@ The default log level is "Debug" which shows nearly everything the application d
 
 ## How do I run it?
 
-Clone the repo. Use Visual Studio or Visual Studio Code to build `TeasmCompanion`. Then create and configure a `config.json` and run `TeasmCompanion.exe` (or `TeasmCompanion.dll` on Linux).
+Clone the repo. Build `TeasmCompanion` using Visual Studio, Visual Studio Code or the command line, depending on your platform and preference. Then create and configure a `config.json` and run `TeasmCompanion.exe` (Windows) or `TeasmCompanion.dll` (Linux).
 
 Windows:
 
 * Open solution in Visual Studio
-* Build Project `TeasmCompanion`
+* Build project `TeasmCompanion`
 * To run: start `TeasmCompanion.exe`
 
 Linux:
@@ -134,7 +134,7 @@ Linux:
 
 Tokens for initial chat retrieval have a lifetime of about an hour and need to be renewed afterwards. You can trigger renewal in your Teams client by switching to another tenant and back. You can also clear the cache of either the Teams client or your browser, then restart/reload the client. That should renew the token as well.
 
-*Note: The tokens needed to get the actual chat messages per chat have a alonger lifetime of >1 day, so once the chat list has been retrieved you can let it run unattended for some time. The Teams clients might even renew this token from time to time automatically.*
+*Note: The tokens needed to get the actual chat messages per chat have a a longer lifetime of >1 day, so once the chat list has been retrieved you can let it run unattended for some time. The Teams clients might even renew this token from time to time automatically.*
 
 ### Some e-mails seem empty - why?
 
