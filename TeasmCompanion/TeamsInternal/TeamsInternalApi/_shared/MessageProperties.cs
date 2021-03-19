@@ -191,6 +191,10 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? dynamicMembership { get; set; }
         // "Internal", ...
         public string? classification { get; set; }
+
+        public long lastDeletedAt { get; set; }
+        public long lastRestoredAt { get; set; }
+
     }
 
     // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="ThreadUpdate", EventMessage.resource.type="Message"
@@ -259,6 +263,11 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? replyPermission { get; set; }
     }
 
+    // add more here
+    public partial class MessageProperties
+    {
+
+    }
 
     public class Emaildetails
     {
@@ -290,12 +299,18 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? shareUrl { get; set; }
     }
 
-    public class Data
+    public partial class Data
     {
         public string? url { get; set; }
         public string? shareUrl { get; set; }
     }
-
+    public partial class Data
+    {
+        // Info separated with "|"
+        public string? serializedRecordingData { get; set; }
+        // "1,2,3,4"
+        public string? recordingMessageIds { get; set; }
+    }
     public class Teamstatus
     {
         public int? exchangeTeamCreationStatus { get; set; }

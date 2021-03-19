@@ -15,10 +15,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public Settings settings { get; set; }
         // "extension-tab"
         public string directive { get; set; }
+        // this can be string or double(??) like 10000.0
         public string order { get; set; }
         public string resourceId { get; set; }
         public string replyChainId { get; set; }
         public string externalId { get; set; }
+        // "True" (yes, uppercase); set for e.g. Planner tab
+        public string isUnconfigured { get; set; }
     }
 
     public partial class Settings

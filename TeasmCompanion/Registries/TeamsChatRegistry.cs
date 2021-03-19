@@ -178,13 +178,13 @@ namespace TeasmCompanion.Stores
             await teamsTenantApiAccessor.DownloadImagesAsync(ctx, processedChat.OrderedMessages);
             return (processedChat, messagesForChat.Count());
         }
-        public async Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, Chat oldChat)
+        public async Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, IChatChangeInfo oldChat, Chat newChat)
         {
             Debug.Assert(oldChat != null);
-            var messagesForChat = await teamsTenantApiAccessor.RetrieveMessagesForChatSinceAsync(ctx, oldChat, oldChat.version - (long)TimeSpan.FromMinutes(1).TotalMilliseconds);
-            var processedChat = await teamsTenantApiAccessor.ProcessChatMessagesAsync(ctx, oldChat, messagesForChat);
+            var messagesForNewChat = await teamsTenantApiAccessor.RetrieveMessagesForChatSinceAsync(ctx, oldChat.Id, oldChat.Version - (long)TimeSpan.FromMinutes(1).TotalMilliseconds);
+            var processedChat = await teamsTenantApiAccessor.ProcessChatMessagesAsync(ctx, newChat, messagesForNewChat);
             await teamsTenantApiAccessor.DownloadImagesAsync(ctx, processedChat.OrderedMessages);
-            return (processedChat, messagesForChat.Count());
+            return (processedChat, messagesForNewChat.Count());
         }
 
         public async Task StoreMailThreadAsyncAndUpdateMetadataAsync(TeamsDataContext ctx, string title, ProcessedChat chat, IOrderedEnumerable<IChatMessage> messages)
@@ -204,22 +204,22 @@ namespace TeasmCompanion.Stores
             
             // try to get change info from index which is mighty fast once cached
             var chatIndex = await GetChatIndexAsync(ctx);
-            IChatChangeInfo? result = null;
+            IChatChangeInfo? oldChatChangeInfo = null;
             if (chatIndex.TryGetValue(chat.id, out var chatIndexEntry))
             {
                 logger.Verbose("[{TenantName}] Found chat {ChatId} in chat index", ctx.Tenant.TenantName, chat.id.Truncate(Constants.ChatIdLogLength, true));
-                result = chatIndexEntry;
+                oldChatChangeInfo = chatIndexEntry;
             } else
             {
                 logger.Debug("[{TenantName}] Did not find chat {ChatId} in index, need to retrieve", ctx.Tenant.TenantName, chat.id.Truncate(Constants.ChatIdLogLength, true));
                 // if there is no chat index entry yet then we request the "real" chat info
                 var storedChat = await GetStoredProcessedChatAsync(ctx, true, chat.id);
-                result = storedChat;
+                oldChatChangeInfo = storedChat;
                 // after retrieving the chat our cache will be invalid; retrieve index again the next time
                 // await ClearChatIndexCache(ctx); -> note: don't do this anymore as the store will collect several changes and store them later; clearing _now_ makes no sense
                 await UpdateChatIndexCacheEntry(ctx, storedChat);
             }
-            if (result == null)
+            if (oldChatChangeInfo == null)
             {
                 logger.Debug("[{TenantName}] This is a new chat that needs to be retrieved | {Context}", ctx.Tenant.TenantName, ctx);
                 var (chatWithMessages, newMessageCount) = await RetrieveProcessedChatWithAllMessagesAsync(ctx, chat);
@@ -228,21 +228,29 @@ namespace TeasmCompanion.Stores
                 await StoreMailThreadAsyncAndUpdateMetadataAsync(ctx, chatWithMessages.ChatTitle, chatWithMessages, chatWithMessages.OrderedMessages);
                 //await ClearChatIndexCache(ctx);  -> note: don't do this anymore as the store will collect several changes and store them later; clearing _now_ makes no sense
                 await UpdateChatIndexCacheEntry(ctx, chatWithMessages);
-                return (ChatRetrievalResult.SuccessfulFullRetrieval, result = chatWithMessages, newMessageCount);
+                return (ChatRetrievalResult.SuccessfulFullRetrieval, oldChatChangeInfo = chatWithMessages, newMessageCount);
             }
-            else if (result.Version != chat.version) // note: threadVersion seems to be way to current and excludes the latest messages; version ist better but also excludes the last message by a few ms...
+            else if (oldChatChangeInfo.Version != chat.version) // note: threadVersion seems to be way to current and excludes the latest messages; version ist better but also excludes the last message by a few ms...
             {
-                logger.Information("[{TenantName}] Chat {ChatTitleOld}/{ChatTitleNew} has been updated, need to retrieve new messages | {Context}", ctx.Tenant.TenantName, result.TitleOrFolderName, chat.title, ctx);
-                var (chatWithMessages, newMessageCount) = await RetrieveProcessedChatWithOnlyNewMessagesAsync(ctx, chat);
+                logger.Information("[{TenantName}] Chat {ChatTitleOld}/{ChatTitleNew} has been updated, need to retrieve new messages (old version: {Version} == {VersionReadable}, new version: {VersionNew} == {VersionNewReadable}) | {Context}", 
+                    ctx.Tenant.TenantName, 
+                    oldChatChangeInfo.TitleOrFolderName, 
+                    chat.title, 
+                    oldChatChangeInfo.Version, 
+                    Utils.JavaScriptUtcMsToDateTime(oldChatChangeInfo.Version), 
+                    chat.version, 
+                    Utils.JavaScriptUtcMsToDateTime(chat.version), 
+                    ctx);
+                var (chatWithMessages, newMessageCount) = await RetrieveProcessedChatWithOnlyNewMessagesAsync(ctx, oldChatChangeInfo, chat);
                 await StoreMailThreadAsyncAndUpdateMetadataAsync(ctx, chatWithMessages.ChatTitle, chatWithMessages, chatWithMessages.OrderedMessages);
                 await UpdateChatIndexCacheEntry(ctx, chatWithMessages);
                 // await ClearChatIndexCache(ctx);  -> note: don't do this anymore as the store will collect several changes and store them later; clearing _now_ makes no sense
-                return (ChatRetrievalResult.SuccessfulUpdate, result = chatWithMessages, newMessageCount);
+                return (ChatRetrievalResult.SuccessfulUpdate, oldChatChangeInfo = chatWithMessages, newMessageCount);
             }
             else
             {
-                logger.Debug("[{TenantName}] Ignoring existing up-to-date chat: {ChatTitle} (Chat ID: {ChatId}) | {Context}", ctx.Tenant.TenantName, result.TitleOrFolderName, chat.id.Truncate(Constants.ChatIdLogLength, true), ctx);
-                return (ChatRetrievalResult.IsUpToDate, result, 0);
+                logger.Debug("[{TenantName}] Ignoring existing up-to-date chat: {ChatTitle} (Chat ID: {ChatId}) | {Context}", ctx.Tenant.TenantName, oldChatChangeInfo.TitleOrFolderName, chat.id.Truncate(Constants.ChatIdLogLength, true), ctx);
+                return (ChatRetrievalResult.IsUpToDate, oldChatChangeInfo, 0);
             }
         }
 

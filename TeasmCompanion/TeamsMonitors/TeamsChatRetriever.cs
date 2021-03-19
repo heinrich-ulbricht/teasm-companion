@@ -150,8 +150,19 @@ namespace TeasmCompanion.TeamsMonitors
                 double slowdownMultiplier = 1;
                 if (processedChat != null)
                 {
-                    slowdownMultiplier = Math.Max(1, (DateTime.UtcNow -  Utils.JavaScriptUtcMsToDateTime(processedChat.GetLastMessageVersionWithLogic().Item2)).TotalDays / 200);
-                    logger.Write(result != ChatRetrievalResult.IsUpToDate ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Verbose, "[{TenantName}] Version info for chat {ChatId}: Version={Version}, ThreadVersion={ThreadVersion}, LastMessageVersionWithLogic={LastMessageVersion}, SlowdownMultiplier={SlowdownMultiplier}", ctx.Tenant.TenantName, chat.id.Truncate(Constants.ChatIdLogLength, true), Utils.JavaScriptUtcMsToDateTime(processedChat.Version), Utils.JavaScriptUtcMsToDateTime(processedChat.ThreadVersion), Utils.JavaScriptUtcMsToDateTime(processedChat.GetLastMessageVersionWithLogic().Item2), slowdownMultiplier);
+                    var lastMessageVersionWithLogic = processedChat.GetLastMessageVersionWithLogic().Item2;
+                    slowdownMultiplier = Math.Max(1, (DateTime.UtcNow -  Utils.JavaScriptUtcMsToDateTime(lastMessageVersionWithLogic)).TotalDays / 200);
+                    logger.Write(result != ChatRetrievalResult.IsUpToDate ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Verbose,
+                        "[{TenantName}] Version info for chat {ChatId}: Version={Version}=={VersionReadable}, ThreadVersion={ThreadVersion}=={ThreadVersionReadable}, LastMessageVersionWithLogic={LastMessageVersion}=={LastMessageVersionReadable}, SlowdownMultiplier={SlowdownMultiplier}", 
+                        ctx.Tenant.TenantName, 
+                        chat.id.Truncate(Constants.ChatIdLogLength, true),
+                        processedChat.Version,
+                        Utils.JavaScriptUtcMsToDateTime(processedChat.Version),
+                        processedChat.ThreadVersion,
+                        Utils.JavaScriptUtcMsToDateTime(processedChat.ThreadVersion),
+                        lastMessageVersionWithLogic,
+                        Utils.JavaScriptUtcMsToDateTime(lastMessageVersionWithLogic), 
+                        slowdownMultiplier);
                 }
 
                 if (result == ChatRetrievalResult.SuccessfulFullRetrieval)

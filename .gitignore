@@ -45,3 +45,6 @@ launchSettings.json
 
 # VS Code Extensions
 .VSCodeCounter
+
+# Other
+logs/

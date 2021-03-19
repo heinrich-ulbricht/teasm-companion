@@ -197,6 +197,8 @@ namespace TeasmCompanion.TeamsTokenRetrieval
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
+                if (!File.Exists(path))
+                    continue;
 
                 var skipFile = false;
                 var cmd = Cli
@@ -213,6 +215,9 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                     }
                     catch (CommandExecutionException e)
                     {
+                        if (!File.Exists(path))
+                            continue;
+
                         // retry some time, but then stop
                         if (retryCount++ > 5)
                         {

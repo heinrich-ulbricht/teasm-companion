@@ -398,6 +398,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? sharepointSiteUrl { get; set; }
         // nested JSON like "topics": "[{\"id\":\"19:someid@thread.tacv2\",\"name\":\"Topic 1\",\"picture\":null,\"createdat\":\"1111111111\",\"isdeleted\":false},{\"id\":\"19:someid@thread.tacv2\",\"name\":\"Topic 2\",\"picture\":null,\"createdat\":\"1111111111\",\"isdeleted\":false}]",
         public string? topics { get; set; }
+        // a GUID
+        public string? groupId { get; set; }
     }
 
     public class Memberproperties

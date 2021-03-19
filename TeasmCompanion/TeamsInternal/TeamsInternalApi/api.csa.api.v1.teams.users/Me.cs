@@ -469,6 +469,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public int appointmentType { get; set; }
         public int meetingType { get; set; }
         public string scenario { get; set; }
+
+        public string organizerId { get; set; }
+        public string tenantId { get; set; }
     }
 
     public class Eventrecurrencerange

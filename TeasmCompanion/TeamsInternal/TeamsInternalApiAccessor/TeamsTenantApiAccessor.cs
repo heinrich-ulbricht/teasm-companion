@@ -167,27 +167,27 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
 
         public async Task<IEnumerable<Message>> RetrieveAllMessagesForChatAsync(TeamsDataContext ctx, Chat chat)
         {
-            return await RetrieveMessagesForChatAsync(ctx, chat, 1);
+            return await RetrieveMessagesForChatAsync(ctx, chat.Id, 1);
         }
 
         /**
          * startTime = version of a chat, which is a JavaScript UTC time
          */
-        public async Task<IEnumerable<Message>> RetrieveMessagesForChatSinceAsync(TeamsDataContext ctx, Chat chat, long startTime)
+        public async Task<IEnumerable<Message>> RetrieveMessagesForChatSinceAsync(TeamsDataContext ctx, string chatId, long startTime)
         {
-            return await RetrieveMessagesForChatAsync(ctx, chat, startTime);
+            return await RetrieveMessagesForChatAsync(ctx, chatId, startTime);
         }
 
-        private async Task<IEnumerable<Message>> RetrieveMessagesForChatAsync(TeamsDataContext ctx, Chat chat, long startTime)
+        private async Task<IEnumerable<Message>> RetrieveMessagesForChatAsync(TeamsDataContext ctx, string chatId, long startTime)
         {
-            logger.Debug("[{TenantName}] Entering {Method} to retrieve messages for chat {ChatId}", ctx.Tenant.TenantName, nameof(RetrieveMessagesForChatAsync), chat.id.Truncate(Constants.ChatIdLogLength, true));
+            logger.Debug("[{TenantName}] Entering {Method} to retrieve messages for chat {ChatId} (startTime: {StartTime} == {StartTimeReadable})", ctx.Tenant.TenantName, nameof(RetrieveMessagesForChatAsync), chatId.Truncate(Constants.ChatIdLogLength, true), startTime, startTime > 0 ? Utils.JavaScriptUtcMsToDateTime(startTime) : "all");
             var userId = ctx.Tenant.UserId;
             var tokenContext = tokenRetriever.GetOrCreateUserTokenContext(userId);
             var tokenInfo = tokenContext[TeamsTokenType.MyChatsAuthHeader];
 
-            if (config.ChatIdIgnoreList.Contains(chat.id, StringComparer.InvariantCultureIgnoreCase))
+            if (config.ChatIdIgnoreList.Contains(chatId, StringComparer.InvariantCultureIgnoreCase))
             {
-                logger.Debug("[{TenantName}] Chat {ChatId} is on the ignore list, exiting with fake empty message list", ctx.Tenant.TenantName, chat.id.Truncate(Constants.ChatIdLogLength, true));
+                logger.Debug("[{TenantName}] Chat {ChatId} is on the ignore list, exiting with fake empty message list", ctx.Tenant.TenantName, chatId.Truncate(Constants.ChatIdLogLength, true));
                 return new List<Message>();
             }
 
@@ -214,18 +214,18 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
             client.DefaultRequestHeaders.AcceptLanguage.Add(new StringWithQualityHeaderValue("de"));
 
             var result = new List<Message>();
-            var url = $"{urlLeftPart}/{HttpUtility.UrlEncode(chat.id)}/messages?view=msnp24Equivalent|supportsMessageProperties&pageSize=200&startTime={startTime}";
+            var url = $"{urlLeftPart}/{HttpUtility.UrlEncode(chatId)}/messages?view=msnp24Equivalent|supportsMessageProperties&pageSize=200&startTime={startTime}";
             var waitSomeTime = false;
             do
             {
                 if (waitSomeTime)
                 {
                     var waitSecs = 30;
-                    logger.Debug("[{TenantName}] Waiting {Secs} seconds before retrieving the next batch for chat {ChatId}", ctx.Tenant.TenantName, waitSecs, chat.id.Truncate(Constants.ChatIdLogLength, true));
+                    logger.Debug("[{TenantName}] Waiting {Secs} seconds before retrieving the next batch for chat {ChatId}", ctx.Tenant.TenantName, waitSecs, chatId.Truncate(Constants.ChatIdLogLength, true));
                     await Task.Delay(TimeSpan.FromSeconds(waitSecs)); // there is no evidence that we need this but it seems like a cautious approach
                 }
 
-                logger.Debug("[{TenantName}] Retrieving messages for chat {ChatId} from URL {Url}", ctx.Tenant.TenantName, chat.id.Truncate(Constants.ChatIdLogLength, true), url);
+                logger.Debug("[{TenantName}] Retrieving messages for chat {ChatId} from URL {Url}", ctx.Tenant.TenantName, chatId.Truncate(Constants.ChatIdLogLength, true), url);
                 var messagesHttpResult = await client.GetAsync(url);
                 if (messagesHttpResult.IsSuccessStatusCode)
                 {
@@ -233,7 +233,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
                     var data = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
                     var messages = JsonUtils.DeserializeObject<ThreadMessages>(logger, data);
                     startTime = messages._metadata.lastCompleteSegmentStartTime; // this will be 1 if there is only one page, otherwise this is the startTime for the next query
-                    logger.Debug("[{TenantName}] Got {Count} chat messages for chat {ChatId}", ctx.Tenant.TenantName, messages.messages.Count, chat.id.Truncate(Constants.ChatIdLogLength, true));
+                    logger.Debug("[{TenantName}] Got {Count} chat messages for chat {ChatId}", ctx.Tenant.TenantName, messages.messages.Count, chatId.Truncate(Constants.ChatIdLogLength, true));
                     result.AddRange(messages.messages);
                     waitSomeTime = messages.messages.Count > 20;
 

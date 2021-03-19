@@ -23,14 +23,14 @@ namespace TeasmCompanion.Interfaces
         /// <param name="ctx">Data context</param>
         /// <param name="chat">Chat to retrieve</param>
         /// <returns>Retrieved chat and the number of retrieved messages</returns>
-        Task<(ProcessedChat, long)> RetrieveProcessedChatWithAllMessagesAsync(TeamsDataContext ctx, Chat chat);
+        Task<(ProcessedChat, long)> RetrieveProcessedChatWithAllMessagesAsync(TeamsDataContext ctx, Chat oldChat);
         /// <summary>
         /// Retrieve only new messages for chat.
         /// </summary>
         /// <param name="ctx">Data context</param>
         /// <param name="oldChat">Old chat to retrieve update for</param>
         /// <returns>Retrieved chat and the number of retrieved new messages</returns>
-        Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, Chat oldChat);
+        Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, IChatChangeInfo oldChat, Chat newChat);
 
         /// <summary>
         /// Retrieve the neccessary amount of messages, either all, updated or none.
