@@ -30,7 +30,7 @@ namespace TeasmCompanion.Interfaces
         /// <param name="ctx">Data context</param>
         /// <param name="oldChat">Old chat to retrieve update for</param>
         /// <returns>Retrieved chat and the number of retrieved new messages</returns>
-        Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, IChatChangeInfo oldChat, Chat newChat);
+        Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, string chatId, long retrieveSinceJsTimestamp, Chat newChat);
 
         /// <summary>
         /// Retrieve the neccessary amount of messages, either all, updated or none.

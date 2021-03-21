@@ -486,7 +486,6 @@ namespace TeasmCompanion
 
         private void StoreChatMessage(IMailFolder chatFolder, IChatMessage message, string? previousMessageId, object lockObject)
         {
-            logger.Debug("Storing message from {0} with ID {1} in chat folder '{2}'", message.From.Select(f => f.DisplayName), message.Id, chatFolder.Name);
             var email = CreateMimeMessageFromChatMessageAsync(message, previousMessageId).Result;
             //previousMessageId = email.MessageId;
             lock (lockObject)
@@ -495,10 +494,12 @@ namespace TeasmCompanion
                 var existingMessage = chatFolder.Search(SearchQuery.HeaderContains("Message-ID", email.MessageId));
                 if (existingMessage.Count == 0)
                 {
+                    logger.Debug("Storing new message from {0} with ID {1} in chat folder '{2}'", message.From.Select(f => f.DisplayName), message.Id, chatFolder.Name);
                     chatFolder.Append(email);
                 }
                 else
                 {
+                    logger.Debug("Updating existing message from {0} with ID {1} in chat folder '{2}'", message.From.Select(f => f.DisplayName), message.Id, chatFolder.Name);
                     // this is bound to happen if there are multiple listeners or multiple open notification endpoints - if this is a valid scenario we need to lock message creation as well
                     if (existingMessage.Count > 1)
                     {

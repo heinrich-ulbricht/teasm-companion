@@ -29,16 +29,17 @@ namespace TeasmCompanion.Stores
         private readonly ILogger logger;
         private readonly ITeamsChatStore chatStore;
         private readonly TeamsTenantApiAccessor teamsTenantApiAccessor;
+        private readonly Configuration config;
         private const int ChatsAndTeamsCacheLifetimeDays = 1;
         private const int SingleChatCacheLifetimeMins = 10;
         private const int ChatIndexCacheLifetimeMins = 10;
 
-        public TeamsChatRegistry(ILogger logger, ITeamsChatStore chatStore, TeamsTenantApiAccessor teamsTenantApiAccessor)
+        public TeamsChatRegistry(ILogger logger, ITeamsChatStore chatStore, TeamsTenantApiAccessor teamsTenantApiAccessor, Configuration config)
         {
             this.logger = logger.ForContext<TeamsChatRegistry>();
             this.chatStore = chatStore;
             this.teamsTenantApiAccessor = teamsTenantApiAccessor;
-
+            this.config = config;
             this.chatStore.OnChatIndexChanged += ChatIndexChangedHandler;
         }
 
@@ -178,10 +179,12 @@ namespace TeasmCompanion.Stores
             await teamsTenantApiAccessor.DownloadImagesAsync(ctx, processedChat.OrderedMessages);
             return (processedChat, messagesForChat.Count());
         }
-        public async Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, IChatChangeInfo oldChat, Chat newChat)
+        public async Task<(ProcessedChat, long)> RetrieveProcessedChatWithOnlyNewMessagesAsync(TeamsDataContext ctx, string chatId, long retrieveSinceJsTimestamp, Chat newChat)
         {
-            Debug.Assert(oldChat != null);
-            var messagesForNewChat = await teamsTenantApiAccessor.RetrieveMessagesForChatSinceAsync(ctx, oldChat.Id, oldChat.Version - (long)TimeSpan.FromMinutes(1).TotalMilliseconds);
+            var messagesForNewChat = await teamsTenantApiAccessor.RetrieveMessagesForChatSinceAsync(
+                ctx, 
+                chatId, 
+                retrieveSinceJsTimestamp);
             var processedChat = await teamsTenantApiAccessor.ProcessChatMessagesAsync(ctx, newChat, messagesForNewChat);
             await teamsTenantApiAccessor.DownloadImagesAsync(ctx, processedChat.OrderedMessages);
             return (processedChat, messagesForNewChat.Count());
@@ -196,6 +199,35 @@ namespace TeasmCompanion.Stores
         public async Task<bool> StoreSingleChatMessageAsync(TeamsDataContext ctx, IChatMessage message)
         {
             return await chatStore.StoreSingleChatMessageAsync(ctx, message);
+        }
+
+        private List<string> alreadyForceUpdatedChats = new List<string>();
+
+        private enum ChatUpdateReason 
+        {
+            Normal,
+            Forced
+
+        }
+        private bool ChatNeedsUpdate(IChatChangeInfo knownChatChangeInfo, long newChatVersion, out long retrieveSinceVersion, out ChatUpdateReason? updateReason)
+        {
+            // genuine chat update
+            var versionXDaysAgo = DateTime.UtcNow.Add(TimeSpan.FromDays(-1 * config.ForceUpdateChatDays)).ToJavaScriptUtcMilliseconds();
+            if (config.ForceUpdateChatDays > 0 && versionXDaysAgo < knownChatChangeInfo.LastMessageVersion && !alreadyForceUpdatedChats.Contains(knownChatChangeInfo.Id))
+            {
+                updateReason = ChatUpdateReason.Forced;
+                retrieveSinceVersion = versionXDaysAgo;
+                return true;
+            } else if (knownChatChangeInfo.Version < newChatVersion)
+            {
+                updateReason = ChatUpdateReason.Normal;
+                retrieveSinceVersion = knownChatChangeInfo.Version.Add(TimeSpan.FromMinutes(-1));
+                return true;
+            }
+
+            updateReason = null;
+            retrieveSinceVersion = newChatVersion;
+            return false;
         }
 
         public async Task<(ChatRetrievalResult, IChatChangeInfo?, long)> RetrieveChatAndMessagesIfNeededAsync(TeamsDataContext ctx, Chat chat)
@@ -228,24 +260,32 @@ namespace TeasmCompanion.Stores
                 await StoreMailThreadAsyncAndUpdateMetadataAsync(ctx, chatWithMessages.ChatTitle, chatWithMessages, chatWithMessages.OrderedMessages);
                 //await ClearChatIndexCache(ctx);  -> note: don't do this anymore as the store will collect several changes and store them later; clearing _now_ makes no sense
                 await UpdateChatIndexCacheEntry(ctx, chatWithMessages);
-                return (ChatRetrievalResult.SuccessfulFullRetrieval, oldChatChangeInfo = chatWithMessages, newMessageCount);
+                return (ChatRetrievalResult.SuccessfulFullRetrieval, chatWithMessages, newMessageCount);
             }
-            else if (oldChatChangeInfo.Version != chat.version) // note: threadVersion seems to be way to current and excludes the latest messages; version ist better but also excludes the last message by a few ms...
+            else if (ChatNeedsUpdate(oldChatChangeInfo, chat.version, out var retrieveSinceJsTimestamp, out var updateReason)) // note: threadVersion seems to be way to current and excludes the latest messages; version ist better but also excludes the last message by a few ms...
             {
-                logger.Information("[{TenantName}] Chat {ChatTitleOld}/{ChatTitleNew} has been updated, need to retrieve new messages (old version: {Version} == {VersionReadable}, new version: {VersionNew} == {VersionNewReadable}) | {Context}", 
+                logger.Information("[{TenantName}] Chat {ChatTitleOld}/{ChatTitleNew} has been updated, need to retrieve new messages (old version: {Version} == {VersionReadable}, new version: {VersionNew} == {VersionNewReadable}) (config.ForceUpdateAdditionalChatDays == {Days}) | {Context}", 
                     ctx.Tenant.TenantName, 
                     oldChatChangeInfo.TitleOrFolderName, 
                     chat.title, 
                     oldChatChangeInfo.Version, 
                     Utils.JavaScriptUtcMsToDateTime(oldChatChangeInfo.Version), 
                     chat.version, 
-                    Utils.JavaScriptUtcMsToDateTime(chat.version), 
+                    Utils.JavaScriptUtcMsToDateTime(chat.version),
+                    config.ForceUpdateChatDays,
                     ctx);
-                var (chatWithMessages, newMessageCount) = await RetrieveProcessedChatWithOnlyNewMessagesAsync(ctx, oldChatChangeInfo, chat);
+                
+                var (chatWithMessages, newMessageCount) = await RetrieveProcessedChatWithOnlyNewMessagesAsync(ctx, oldChatChangeInfo.Id, retrieveSinceJsTimestamp, chat);
                 await StoreMailThreadAsyncAndUpdateMetadataAsync(ctx, chatWithMessages.ChatTitle, chatWithMessages, chatWithMessages.OrderedMessages);
                 await UpdateChatIndexCacheEntry(ctx, chatWithMessages);
+                // need to remember the chats that we already force-updated, otherwise those will be updated again and again
+                if (updateReason == ChatUpdateReason.Forced)
+                {
+                    alreadyForceUpdatedChats.Add(oldChatChangeInfo.Id);
+                }
+
                 // await ClearChatIndexCache(ctx);  -> note: don't do this anymore as the store will collect several changes and store them later; clearing _now_ makes no sense
-                return (ChatRetrievalResult.SuccessfulUpdate, oldChatChangeInfo = chatWithMessages, newMessageCount);
+                return (ChatRetrievalResult.SuccessfulUpdate, chatWithMessages, newMessageCount);
             }
             else
             {

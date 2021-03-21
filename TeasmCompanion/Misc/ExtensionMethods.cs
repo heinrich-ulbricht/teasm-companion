@@ -231,5 +231,10 @@ namespace TeasmCompanion
             mimePart?.WriteTo(stream);
             return encoding.GetString(stream.ToArray());
         }
+
+        public static long Add(this long value, TimeSpan amount)
+        {
+            return value + (long)amount.TotalMilliseconds;
+        }
     }
 }

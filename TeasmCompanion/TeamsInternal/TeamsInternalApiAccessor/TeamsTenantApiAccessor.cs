@@ -235,7 +235,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
                     startTime = messages._metadata.lastCompleteSegmentStartTime; // this will be 1 if there is only one page, otherwise this is the startTime for the next query
                     logger.Debug("[{TenantName}] Got {Count} chat messages for chat {ChatId}", ctx.Tenant.TenantName, messages.messages.Count, chatId.Truncate(Constants.ChatIdLogLength, true));
                     result.AddRange(messages.messages);
-                    waitSomeTime = messages.messages.Count > 20;
+                    waitSomeTime = messages.messages.Count > 150;
 
                     if (url == messages._metadata.syncState)
                     {

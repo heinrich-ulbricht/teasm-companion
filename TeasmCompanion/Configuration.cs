@@ -18,6 +18,7 @@ namespace TeasmCompanion
         public List<string> ChatIdIgnoreList { get; set; } = new List<string>();
         public int ResolveUnknownUserIdsJobIntervalMin { get; set; } = 10;
 
+        public int ForceUpdateChatDays { get; set; } = 0;
         public bool DebugClearLocalCacheOnStart { get; set; } = false;
         public bool DebugDisableEmailServerCertificateCheck { get; set; } = false;
         public string LogLevel { get; set; } = "Debug";
