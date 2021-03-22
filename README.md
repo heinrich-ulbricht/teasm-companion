@@ -1,12 +1,12 @@
 # Teasm Companion
 
-A companion app for Microsoft Teams. Pronounced "Teams Companion".
+A companion app for Microsoft Teams to backup your chats. Pronounced "Teams Companion".
 
 Created in lockdown times to counter code withdrawal. Playground for [C# 9](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-9), [Reactive Extensions](http://reactivex.io/), some [Polly](https://github.com/App-vNext/Polly), [LevelDB](https://github.com/google/leveldb) and more IMAP than expected.
 
 ## What does it do?
 
-Teasm Companion is like a new Teams client. It fetches your chats and chat messages (those you would normally see when clicking on the "Chat" icon in Microsoft Teams) and stores them locally.
+Teasm Companion is like a special Teams client. It fetches your chats and chat messages (those you would normally see when clicking on the "Chat" icon in Microsoft Teams) and stores them locally.
 
 Teasm Companion retrieves the following data for any of your authenticated Teams accounts:
 
