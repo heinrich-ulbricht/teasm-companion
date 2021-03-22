@@ -1,6 +1,6 @@
 # Teasm Companion
 
-A companion app for Microsoft Teams to backup your chats. Pronounced "Teams Companion".
+A companion app for Microsoft Teams to back up your chats. Pronounced "Teams Companion".
 
 Created in lockdown times to counter code withdrawal. Playground for [C# 9](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-9), [Reactive Extensions](http://reactivex.io/), some [Polly](https://github.com/App-vNext/Polly), [LevelDB](https://github.com/google/leveldb) and more IMAP than expected.
 
