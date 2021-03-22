@@ -44,7 +44,7 @@ The following is needed to run Teasm Companion:
 * Windows 10 or Linux (tested on Fedora 33)
 * .NET 5.0
 * A local IMAP server, see section "You need an IMAP server" below for details
-* `TeamsTokenRetrieval\precompiled\ldbdump.exe` (or `ldbdump` on Linux) - which are included in this repo - must be present and executable, see [TeamsTokenRetrieval\precompiled\README.md](TeamsTokenRetrieval\precompiled\README.md) for details; you can build them yourself if you want, instructions are in the README
+* `ldbdump.exe` (or `ldbdump` on Linux) - which is included in this repo - must be present and executable, see [TeamsTokenRetrieval/precompiled/README.md](TeasmCompanion/TeamsTokenRetrieval/precompiled/README.md) for details; you can build it yourself if you want, instructions are in the README
 
 ## How are chat messages retrieved?
 
