@@ -1,12 +1,12 @@
 # Teasm Companion
 
-A companion app for Microsoft Teams. Pronounced "Teams Companion".
+A companion app for Microsoft Teams to back up your chats. Pronounced "Teams Companion".
 
 Created in lockdown times to counter code withdrawal. Playground for [C# 9](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-9), [Reactive Extensions](http://reactivex.io/), some [Polly](https://github.com/App-vNext/Polly), [LevelDB](https://github.com/google/leveldb) and more IMAP than expected.
 
 ## What does it do?
 
-Teasm Companion is like a new Teams client. It fetches your chats and chat messages (those you would normally see when clicking on the "Chat" icon in Microsoft Teams) and stores them locally.
+Teasm Companion is like a special Teams client. It fetches your chats and chat messages (those you would normally see when clicking on the "Chat" icon in Microsoft Teams) and stores them locally.
 
 Teasm Companion retrieves the following data for any of your authenticated Teams accounts:
 
@@ -44,7 +44,7 @@ The following is needed to run Teasm Companion:
 * Windows 10 or Linux (tested on Fedora 33)
 * .NET 5.0
 * A local IMAP server, see section "You need an IMAP server" below for details
-* `TeamsTokenRetrieval\precompiled\ldbdump.exe` (or `ldbdump` on Linux) - which are included in this repo - must be present and executable, see [TeamsTokenRetrieval\precompiled\README.md](TeamsTokenRetrieval\precompiled\README.md) for details; you can build them yourself if you want, instructions are in the README
+* `ldbdump.exe` (or `ldbdump` on Linux) - which is included in this repo - must be present and executable, see [TeamsTokenRetrieval/precompiled/README.md](TeasmCompanion/TeamsTokenRetrieval/precompiled/README.md) for details; you can build it yourself if you want, instructions are in the README
 
 ## How are chat messages retrieved?
 
