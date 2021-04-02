@@ -227,6 +227,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         //public string type { get; set; }
         public List<Body>? body { get; set; }
         // "https://adaptivecards.io/schemas/adaptive-card.json"
+        [JsonProperty("$schema")]
         public string? schema { get; set; }
         // "1.0"
         public string? version { get; set; }
@@ -324,13 +325,17 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
 
     public class EventResourceMember
     {
+        // "true"
         public string? alerts { get; set; }
         public long? expiration { get; set; }
         public string? isFollowing { get; set; }
         public string? id { get; set; }
+        // "Anonymous", "Admin"
         public string? role { get; set; }
         public Botsettings? botSettings { get; set; }
         public long? shareHistoryTime { get; set; }
+        public long? memberExpirationTime { get; set; }
+        public long? expirationTimeInSeconds { get; set; }
         public string? tenantId { get; set; }
     }
 
@@ -400,6 +405,11 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? topics { get; set; }
         // a GUID
         public string? groupId { get; set; }
+    }
+    public partial class Threadproperties
+    {
+        // "True"; this is set for chats with Skype users
+        public string? isFederated { get; set; }
     }
 
     public class Memberproperties

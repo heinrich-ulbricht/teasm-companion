@@ -37,7 +37,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         [JsonConverter(typeof(EmbeddedLiteralConverter<List<HyperLink>>))]
         public List<HyperLink>? links { get; set; }
         public Activity? activity { get; set; }
-        // "skypespacesMT", "concore_gvc", "skypespaces", "MailhookService" (for incoming mails)
+        // "skypespacesMT", "concore_gvc", "skypespaces", "MailhookService" (for incoming mails), "SfBInteropGateway" (chat with Skype user)
         public string? s2spartnername { get; set; }
         // seems to be a serialized Meeting object? like this: "{\"meetingtitle\":\"Standup\"}"
         public string? meeting { get; set; }
@@ -94,11 +94,12 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? skypeguid { get; set; }
     }
 
-    // this seems to be set if sending to outside of Teams
+    // this seems to be set if sending to or receiving from outside of Teams
     public partial class MessageProperties
     {
-        // "receiverSfB"
+        // "receiverSfB", "senderSfB"
         public string? interopType { get; set; }
+        // set when sending a message
         public Deliverystate? deliveryState { get; set; }
     }
 
@@ -263,6 +264,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? replyPermission { get; set; }
     }
 
+    // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="MessageUpdate", EventMessage.resource.type="Message", EventMessage.resource.threadtype="Space"
+    public partial class MessageProperties
+    {
+        // JSON literal -> an array containing document links and additionally BASE64-encoded data
+        public string? atp { get; set; }
+    }
+
     // add more here
     public partial class MessageProperties
     {
@@ -316,6 +324,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public int? exchangeTeamCreationStatus { get; set; }
         public int? exchangeTeamDeletionStatus { get; set; }
         public int? sharepointSiteCreationStatus { get; set; }
+        public long? sharepointProvisioningStartTime { get; set; }
         public int? teamResourceUrlCreationStatus { get; set; }
         public int? teamNotebookCreationStatus { get; set; }
     }

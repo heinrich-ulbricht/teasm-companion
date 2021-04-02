@@ -295,6 +295,9 @@ namespace TeasmCompanion.TeamsMonitors
                     {
                         lock (this)
                         {
+                            // todo: handle error here as it crashes the app
+                            // e.g.  ---> System.Net.Http.HttpRequestException: An error occurred while sending the request.
+                            // --->System.IO.IOException: Unable to read data from the transport connection: Eine vorhandene Verbindung wurde vom Remotehost geschlossen..
                             RetrieveChatsAsync(ctx).Wait();
                         }
                     });

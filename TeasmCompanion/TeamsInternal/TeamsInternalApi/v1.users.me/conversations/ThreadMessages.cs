@@ -57,6 +57,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.conversation
         public object threadType { get; set; }
         // set for threadtype=="meeting", messagetype=="ThreadActivity/MemberJoined"
         public bool isactive { get; set; }
+        // set for threadtype=="meeting", messagetype=="ThreadActivity/MemberJoined"
+        public string threadtopic { get; set; }
     }
 
     public class Emotion

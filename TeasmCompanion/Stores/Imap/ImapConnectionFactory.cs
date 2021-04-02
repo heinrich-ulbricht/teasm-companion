@@ -53,6 +53,16 @@ namespace TeasmCompanion.Stores.Imap
                 // those are exceptions like host name not set etc.; terminal exception
                 throw;
             }
+            catch (ImapProtocolException imapProtocolException)
+            {
+                if (imapProtocolException.Message.Equals("The IMAP server has unexpectedly disconnected.", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new TeasmCompanionException("The IMAP server has unexpectedly disconnected, but we'll retry", imapProtocolException);
+                } else
+                {
+                    throw;
+                }
+            }
             catch (OperationCanceledException)
             {
                 throw;
