@@ -48,6 +48,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.mt.emea.beta.users
         public string role { get; set; }
         // "en-US"
         public string preferredLanguage { get; set; }
+        public string alias { get; set; }
     }
 
     public class Skypeteamsinfo

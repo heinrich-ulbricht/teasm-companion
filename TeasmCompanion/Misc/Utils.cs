@@ -10,7 +10,7 @@ namespace TeasmCompanion
         {
             HttpClientHandler handler = new HttpClientHandler()
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
             };
             return new HttpClient(handler);
         }
