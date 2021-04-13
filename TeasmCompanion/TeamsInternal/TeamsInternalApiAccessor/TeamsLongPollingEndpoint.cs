@@ -138,6 +138,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
                 nextUrl = await PollAsync(ctx, nextUrl, onChatChanged);
                 if (nextUrl == null)
                 {
+                    isPolling = false;
                     throw new TeamsLongPollException();
                 }
             }

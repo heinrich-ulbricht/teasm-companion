@@ -108,11 +108,13 @@ namespace TeasmCompanion.TeamsTokenRetrieval
 
                             lastType = (LevelDbRecordTypes)type;
                         }
+                        logger.Debug("Handled {Path}", path);
                     }
                     catch (FileNotFoundException ioEx)
                     {
                         logger.Error(ioEx, "File not found");
                     }
+
                 }
 
                 // this dumps everything in the temp directory

@@ -98,20 +98,24 @@ namespace TeasmCompanion.Stores.Imap
                 if (typeof(T) == typeof(string))
                 {
 #pragma warning disable CS8603 // Possible null reference return.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                     return (T)Activator.CreateInstance(typeof(string), "".ToCharArray());
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning restore CS8603 // Possible null reference return.
                 }
                 else
                 if ((typeof(T).IsValueType))
                 {
 #pragma warning disable CS8603 // Possible null reference return.
-                    return default(T);
+                    return default;
 #pragma warning restore CS8603 // Possible null reference return.
                 }
                 else
                 {
 #pragma warning disable CS8603 // Possible null reference return.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                     return (T)Activator.CreateInstance(typeof(T));
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning restore CS8603 // Possible null reference return.
                 }
             });

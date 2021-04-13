@@ -50,9 +50,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
             }
         }
 
-        private async Task EnsureLongPollingEndpointAsync(TeamsDataContext ctx, Action<List<IChatMessage>> onChatChanged, CancellationToken cancellationToken)
+        private async Task EnsureLongPollingEndpointAndReplaceExistingAsync(TeamsDataContext ctx, Action<List<IChatMessage>> onChatChanged, CancellationToken cancellationToken)
         {
-            logger.Debug("[{TenantName}] EnsureLongPollingEndpointAsync called", ctx.Tenant.TenantName);
+            logger.Debug("[{TenantName}] EnsureLongPollingEndpointAndReplaceExistingAsync called", ctx.Tenant.TenantName);
             TeamsLongPollingEndpoint? endpoint;
             lock (knownEndpoints)
             {
@@ -83,20 +83,20 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
                 return;
             }
 
-            logger.Debug("[{TenantName}] EnsureLongPollingEndpointWithPoliciesAsync called", ctx.Tenant.TenantName);
+            logger.Debug("[{TenantName}] EnsureLongPollingEndpointWithPoliciesAsync called, entering wait loop", ctx.Tenant.TenantName);
             while (!cancellationToken.IsCancellationRequested)
             {
-                var largeRetryCountThatShouldBeEnoughUnlessThereIsAnError = 1000000;
-                var retryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(largeRetryCountThatShouldBeEnoughUnlessThereIsAnError, (retryAttempt) =>
+                var retryPolicy = Policy.Handle<Exception>().WaitAndRetryForeverAsync((retryAttempt) =>
                 {
-                    var waitTimeSec = Math.Pow(2, retryAttempt - 1);
+                    var waitTimeSec = Math.Min(Math.Pow(2, retryAttempt - 1), 30 * 60);
                     logger.Debug("[{TenantName}] Calculated retry time for retry attempt #{RetryAttempty}: {Seconds} seconds", ctx.Tenant.TenantName, retryAttempt, waitTimeSec);
                     return TimeSpan.FromSeconds(waitTimeSec);
                 });
 
                 await retryPolicy.ExecuteAsync(async (cancellationToken) =>
                 {
-                    await EnsureLongPollingEndpointAsync(ctx, onChatChanged, cancellationToken);
+                    // this will never return except there is an exception
+                    await EnsureLongPollingEndpointAndReplaceExistingAsync(ctx, onChatChanged, cancellationToken);
                 }, cancellationToken);
             }
         }

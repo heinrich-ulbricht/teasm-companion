@@ -15,6 +15,7 @@ using TeasmCompanion.Interfaces;
 using CliWrap.Exceptions;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TeasmCompanion.Misc;
 
 #nullable enable
 
@@ -77,14 +78,15 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                 var jwtToken = new JwtSecurityToken(token);
                 if (jwtToken.ValidFrom > DateTime.UtcNow || jwtToken.ValidTo < DateTime.UtcNow)
                 {
-                    logger.Verbose("Ignoring expired {TokenType} token for user {UserId}: {Token}...", tokenType, userId, token.Substring(0, 20));
+                    var tenantId = jwtToken.Claims.Where(c => c.Type == "tid").FirstOrDefault()?.Value;
+                    logger.Debug("Invalid token, ignoring: Tenant {TenantId}, User {UserId}, {TokenType,25} token (valid from: {ValidFrom}, valid to: {ValidTo})", tenantId.Truncate(Constants.UserIdLogLength, true), userId.Truncate(Constants.UserIdLogLength, true), tokenType, jwtToken.ValidFrom, jwtToken.ValidTo);
                 }
                 else
                 {
                     var authHeaderWithToken = generateAuthHeader(token);
                     var userContext = GetOrCreateUserTokenContext(userId);
                     var tokenInfo = new TeamsTokenInfo(userId, tokenType, token, authHeaderWithToken, jwtToken.ValidFrom, jwtToken.ValidTo);
-                    logger.Debug("Found valid token: {@Token}", tokenInfo);
+                    logger.Debug("VALID TOKEN found: {@Token}", tokenInfo);
                     userContext.AddOrReplaceTokenInfo(tokenType, tokenInfo);
                     tokenSource.OnNext(tokenInfo);
                     //var item = cache.Get(tuple);
@@ -211,6 +213,7 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                     try
                     {
                         await cmd.ExecuteAsync(cancellationToken);
+                        logger.Debug("Handled {Path}", path);
                         break;
                     }
                     catch (CommandExecutionException e)
