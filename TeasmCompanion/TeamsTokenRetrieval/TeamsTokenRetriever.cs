@@ -16,6 +16,8 @@ using CliWrap.Exceptions;
 using System.Runtime.InteropServices;
 using System.Threading;
 using TeasmCompanion.Misc;
+using Newtonsoft.Json;
+using TeasmCompanion.TeamsTokenRetrieval.Model;
 
 #nullable enable
 
@@ -116,6 +118,27 @@ namespace TeasmCompanion.TeamsTokenRetrieval
             }
         }
 
+        private void ExtractRunningCalls(string value)
+        {
+            var pattern = @"_https://teams\.microsoft\.com(?:.){2,10}ts\.([a-zA-Z0-9-]+?)\.CallingDropsCollectorService:CallEntries.*?(?:(\[{.*?}\])|\[\])";
+            var matches = Regex.Match(value, pattern);
+            if (matches.Success && matches.Groups.Count == 3 && matches.Groups[2].Success)
+            {
+                var userId = (TeamsParticipant)matches.Groups[1].Value;
+                string jsonLiteral = matches.Groups[2].Value;
+                jsonLiteral = jsonLiteral.Replace("\\\"", "\"");
+                try
+                {
+                    var data = JsonConvert.DeserializeObject<List<CallingDropsCollectorService_CallEntries>>(jsonLiteral);
+                    logger.Debug("Detected (previously) running call: {@data}", data);
+                }
+                catch (Exception e)
+                { // ignore for now, it's not so important
+                    logger.Error(e, "Error while detecting running calls: JSON literal: {@JsonLiteral}", jsonLiteral);
+                }
+            }
+        }
+
         // note: this approach did not work out and needs to be refactored away
         private static Dictionary<string, TeamsTokenType> ApiTokenType = new Dictionary<string, TeamsTokenType>(){
             { "https://emea.ng.msg.teams.microsoft.com/v1/users/ME/conversations", TeamsTokenType.MyChatsAuthHeader },
@@ -164,6 +187,7 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                 );
 
             ExtractEndpoints(text);
+            ExtractRunningCalls(text);
         }
 
         public async Task CaptureTokensFromLevelDbLdbFilesAsync(CancellationToken cancellationToken = default)

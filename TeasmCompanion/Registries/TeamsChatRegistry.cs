@@ -110,6 +110,7 @@ namespace TeasmCompanion.Stores
             {
                 await BlobCache.UserAccount.InsertObject(cacheKey, chatsAndTeams, DateTimeOffset.Now + TimeSpan.FromDays(ChatsAndTeamsCacheLifetimeDays));
             }
+            Experimental.CheckForActiveMeeting(logger, ctx, chatsAndTeams);
             return chatsAndTeams;
         }
 
@@ -138,6 +139,8 @@ namespace TeasmCompanion.Stores
                 return toBeUpdatedChatsAndTeams;
             }
             logger.Debug("[{TenantName}] {Method}: {ChatCount} chats are new or updated with old sync token {SyncToken}", ctx.Tenant.TenantName, nameof(GetUpdatedChatsAndTeamsAsync), toBeUpdatedChatsAndTeams.chats.Count, toBeUpdatedChatsAndTeams.metadata.syncToken.FromBase64String());
+
+            Experimental.CheckForActiveMeeting(logger, ctx, deltaChatsAndTeams);
 
             var oldChatsToReplace = toBeUpdatedChatsAndTeams.chats.Where(oldValue => deltaChatsAndTeams.chats.FirstOrDefault(updatedValue => updatedValue?.id == oldValue?.id) != default);
             logger.Debug("[{TenantName}] {Method}: {ChatCount} old chats need an update", ctx.Tenant.TenantName, nameof(GetUpdatedChatsAndTeamsAsync), oldChatsToReplace.Count());

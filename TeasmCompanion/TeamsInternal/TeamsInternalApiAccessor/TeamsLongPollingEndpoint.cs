@@ -57,7 +57,42 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
             return false;
         }
 
-        public async Task<string?> PollAsync(TeamsDataContext ctx, string url, Action<List<IChatMessage>> onChatChanged)
+        private async Task<List<IChatMessage>> GetChatMessagesFromEventMessages(TeamsDataContext ctx, List<Eventmessage>? eventMessages)
+        {
+            if (eventMessages == null)
+            {
+                return new List<IChatMessage>();
+            }
+
+            var realChatMessages = eventMessages.Where(e => IsChatMessage(e)) ?? new List<Eventmessage>();
+
+            var chatMessages = new List<IChatMessage>();
+            foreach (var m in realChatMessages)
+            {
+                string chatId = m.resource?.to ?? "";
+                if (string.IsNullOrWhiteSpace(chatId))
+                    continue;
+
+                if (m.resource == null)
+                    continue;
+
+                var processedMessage = processedNotificationMessageFactory.CreateProcessedNotificationMessage();
+                chatMessages.Add(await processedMessage.InitFromMessageAsync(ctx, chatId, m.resource));
+            }
+            return chatMessages;
+        }
+
+        private IEnumerable<SuggestedContact> GetSuggestedContactsFromEventMessages(TeamsDataContext ctx, List<Eventmessage>? eventMessages)
+        {
+            if (eventMessages == null)
+            {
+                return new List<SuggestedContact>();
+            }
+
+            return eventMessages.SelectMany(e => e.resource?.suggestedContacts ?? new List<SuggestedContact>());
+        }
+
+            public async Task<string?> PollAsync(TeamsDataContext ctx, string url, Action<List<IChatMessage>> onChatChanged)
         {
             var userId = ctx.Tenant.UserId;
             var tokenContext = tokenRetriever.GetOrCreateUserTokenContext(userId);
@@ -94,28 +129,19 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
                 if (result?.eventMessages?.Count > 0)
                 {
                     logger.Debug("[{TenantName}] Long polling for endpoint {EndpointId} returned with result: \r\nRaw: {@Data}\r\nParsed: {@Result}", ctx.Tenant.TenantName, Id.Truncate(Constants.UserIdLogLength, true), data, result);
-                    var realChatMessages = result
-                                    .eventMessages?
-                                    .Where(e => IsChatMessage(e)) ?? new List<Eventmessage>();
-
-                    var chatMessages = new List<IChatMessage>();
-                    foreach (var m in realChatMessages)
-                    {
-                        string chatId = m.resource?.to ?? "";
-                        if (string.IsNullOrWhiteSpace(chatId))
-                            continue;
-
-                        if (m.resource == null)
-                            continue;
-
-                        var processedMessage = processedNotificationMessageFactory.CreateProcessedNotificationMessage();
-                        chatMessages.Add(await processedMessage.InitFromMessageAsync(ctx, chatId, m.resource));
-                    }
-                    if (chatMessages.Count > 0)
+                    var chatMessages = await GetChatMessagesFromEventMessages(ctx, result.eventMessages);
+                    if (chatMessages.Any())
                     {
                         onChatChanged(chatMessages);
                     }
-                } else
+
+                    var contacts = GetSuggestedContactsFromEventMessages(ctx, result.eventMessages);
+                    if (contacts.Any())
+                    {
+                        logger.Debug("[{TenantName}] Long polling for endpoint {EndpointId} returned suggested contacts: {@Contacts}", ctx.Tenant.TenantName, Id.Truncate(Constants.UserIdLogLength, true), contacts);
+                    }
+                }
+                else
                 {
                     logger.Verbose("[{TenantName}] Long polling for endpoint {EndpointId} returned empty", ctx.Tenant.TenantName, Id.Truncate(Constants.UserIdLogLength, true));
                 }
@@ -124,6 +150,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApiAccessor
             } else
             {
                 logger.Debug("[{TenantName}] Long polling for endpoint {EndpointId} returned with non-success status code; complete result: \r\n{@messagesHttpResult}", ctx.Tenant.TenantName, Id.Truncate(Constants.UserIdLogLength, true), messagesHttpResult);
+                var buffer = await messagesHttpResult.Content.ReadAsByteArrayAsync();
+                var data = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+                logger.Debug("[{TenantName}] Corresponding content: {Content} for endpoint {EndpointId}", ctx.Tenant.TenantName, Id.Truncate(Constants.UserIdLogLength, true), data);
             }
 
             return null;

@@ -90,7 +90,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         // "concore_gvc" -> with skypeguid set
         public BigInteger? counterPartyMessageId { get; set; }
         public BigInteger? origincontextid { get; set; }
-
+        // seems to be identical to the "callid" of a running call
         public string? skypeguid { get; set; }
     }
 
@@ -129,6 +129,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? channelDocsDocumentLibraryId { get; set; }
         // "/sites/...", 
         public string? channelDocsFolderRelativeUrl { get; set; }
+        // JSON literal like "{\"postPermissions\":1,\"allowReplies\":0,\"allowPinPosts\":0,\"allowBotsPost\":1,\"allowConnectorsPost\":1}"
+        public string? channelSettings { get; set; }
         public string? isMigratedThread { get; set; }
         // "92:00000000000000000000000000000000@thread.skype"
         public string? RootResourceGroupId { get; set; }
@@ -231,6 +233,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? notebookId { get; set; }
         // "1"
         public string? spaceTypes { get; set; }
+        // "true"
+        public string? isDeleted { get; set; }
     }
 
     // for threadtype="streamofcalllogs"
@@ -269,6 +273,20 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
     {
         // JSON literal -> an array containing document links and additionally BASE64-encoded data
         public string? atp { get; set; }
+    }
+
+    // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="NewMessage", EventMessage.resource.type="Message", EventMessage.resource.threadtype="streamofbookmarks"
+    public partial class MessageProperties
+    {
+        [JsonConverter(typeof(EmbeddedLiteralConverter<StarredMessage>))]
+        public StarredMessage? starred { get; set; } // this is generated when you bookmark a post
+    }
+
+    // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="MessageUpdate", EventMessage.resource.type="Message", EventMessage.resource.threadtype="topic"
+    public partial class MessageProperties
+    {
+        // JSON literal like "{\"creatorId\":\"8:orgid:00000000-0000-0000-0000-000000000000\",\"pinnedTime\":0000000000000}"
+        public string? pinned { get; set; } // goes along with properties importance, subject and links
     }
 
     // add more here

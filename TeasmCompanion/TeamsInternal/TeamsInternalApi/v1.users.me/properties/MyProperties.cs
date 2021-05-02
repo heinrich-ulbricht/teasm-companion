@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
+using TeasmCompanion.TeamsInternal.TeamsInternalApi._shared;
 using TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints;
-using TeasmCompanion.v1.users.me.properties;
 
 namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.properties
 {

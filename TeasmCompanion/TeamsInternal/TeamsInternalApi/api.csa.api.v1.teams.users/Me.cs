@@ -219,6 +219,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public Membersettings memberSettings { get; set; }
         public Guestsettings1 guestSettings { get; set; }
         public string sharepointSiteUrl { get; set; }
+        public bool explicitlyAdded { get; set; }
+        public List<Activemeetup> activeMeetups { get; set; }
     }
 
     public class Consumptionhorizon
@@ -519,6 +521,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
     public class Configurations
     {
         public Attendancereportconfig attendancereportConfig { get; set; }
+        public Transcriptconfig transcriptConfig { get; set; }
+    }
+
+    public class Transcriptconfig
+    {
+        // "true", ...
+        public string hasTranscript { get; set; } // note: this is _without_ quotes (e.g. a bool) in the list of personal chats, but with quotes (e.g. a string) when coming as notification...
     }
 
     public class Attendancereportconfig

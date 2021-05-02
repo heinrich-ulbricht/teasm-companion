@@ -109,27 +109,26 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public Userpinnedapps? userPinnedApps { get; set; }
         [JsonConverter(typeof(EmbeddedLiteralConverter<List<TeamOrder>>))]
         public List<TeamOrder>? teamsOrder { get; set; }
-        public Personalfilesite? personalfilesite { get; set; }
+        [JsonConverter(typeof(EmbeddedLiteralConverter<PersonalFileSite>))]
+        public PersonalFileSite? personalfilesite { get; set; }
         // seems to be a timestamp
         public string? contactsTabLastVisitTime { get; set; }
         [JsonConverter(typeof(EmbeddedLiteralConverter<UserDetails>))]
         public UserDetails? userDetails { get; set; }
         // contains JSON literal; a hashmap with the key being a chat id and the value being the order; is sent when pinning a chat
         public string? favorites { get; set; }
+        // contains JSON literal; like: "{\"Web\":\"2021-01-01T01:01:01.000Z\",\"espFirstRunStarted\":\"2021-01-01T01:01:01.000Z\"}"
+        public string? firstLoginInformation { get; set; }
+        [JsonConverter(typeof(EmbeddedLiteralConverter<List<SuggestedContact>>))]
+        public List<SuggestedContact>? suggestedContacts { get; set; }
+        // JSON literal of external files/cloud providers (like Google)
+        public string? externalFilesProviders { get; set; }
     }
 
     public class UserDetails
     {
         public string? name { get; set; }
         public string? upn { get; set; }
-    }
-
-    public class Personalfilesite
-    {
-        public string? personalSiteUrl { get; set; }
-        public string? personalRootFolderUrl { get; set; }
-        public long? availability { get; set; }
-        public DateTime lastModifiedTime { get; set; }
     }
 
     public class TeamOrder
@@ -142,7 +141,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     {
         // like "11111fa3111b4573b77c41c4078d5750"
         public string? cardClientId { get; set; }
-        public Content? content { get; set; }
+        public CardContent? content { get; set; }
         // "application/vnd.microsoft.teams.messaging-announcementBanner"
         // "application/vnd.microsoft.card.codesnippet" -> card client ID 111111a168e04361ac70daf72cd1d4e6
         // "application/vnd.microsoft.card.thumbnail" -> card client ID 111119675cf94000b377ffccd93b1742
@@ -160,7 +159,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     }
 
     // common properties
-    public partial class Content
+    public partial class CardContent
     {
         public string? cardClientId { get; set; }
         public string? title { get; set; }
@@ -170,25 +169,23 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     }
 
     // contenttype=application/vnd.microsoft.card.hero && appId=com.microsoft.teamspace.tab.youtube
-    public partial class Content
+    public partial class CardContent
     {
         public string? subtitle { get; set; }
         public List<object>? buttons { get; set; }
     }
 
     // for application/vnd.microsoft.teams.messaging-announcementBanner
-    public partial class Content
+    public partial class CardContent
     {
         public long? colorTheme { get; set; }
         public Imagedata? imageData { get; set; }
     }
 
     // for application/vnd.microsoft.card.codesnippet
-    public partial class Content
+    public partial class CardContent
     {
         public List<object>? observers { get; set; }
-        // "AdaptiveCard"
-        public string? type { get; set; }
         public List<object>? cardButtons { get; set; }
         public object? tapButton { get; set; }
         public object? cardSender { get; set; }
@@ -214,7 +211,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     }
 
     // application/vnd.microsoft.card.audio
-    public partial class Content
+    public partial class CardContent
     {
         // "PT2S"
         public string? duration { get; set; }
@@ -222,16 +219,32 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     }
 
     // for contentType=="application/vnd.microsoft.card.adaptive" && content.type=="AdaptiveCard"
-    public partial class Content
+    public partial class CardContent
     {
         //public string type { get; set; }
-        public List<Body>? body { get; set; }
+        public List<AdaptiveCardBody>? body { get; set; }
         // "https://adaptivecards.io/schemas/adaptive-card.json"
         [JsonProperty("$schema")]
         public string? schema { get; set; }
         // "1.0"
         public string? version { get; set; }
+        public MsTeams? msTeams { get; set; }
+
     }
+
+    // general
+    public partial class CardContent
+    {
+        // "AdaptiveCard"
+        public string? type { get; set; }
+
+    }
+
+    public class MsTeams
+    {
+        public string? width { get; set; }
+    }
+
 
     public class Medium
     {
