@@ -112,7 +112,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
 
     // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="ThreadUpdate", EventMessage.resource.type="ThreadUpdate"
     // topicThreadVersion="v5"
-    [JsonConverter(typeof(StoreDynamicPropertyWithPrefixInCollection), "tab::,integration:")]
+    [JsonConverter(typeof(StoreDynamicPropertyWithPrefixInCollection), "tab::,integration:,awareness_conversationLiveState:")]
     public partial class MessageProperties
     {
         // "False"
@@ -208,16 +208,20 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public Emaildetails? emaildetails { get; set; }
     }
 
-    // for threadType="meeting"
+    // for threadType="meeting" and apparently also threadType "topic" for a channel meeting (?)
     public partial class MessageProperties
     {
         // "{\"updatedTime\":\"1111111111111\"}"
         public string? extensionDefinitionContainer { get; set; }
         // "false"
         public string? ongoingCallChatEnforcement { get; set; }
-        [JsonConverter(typeof(EmbeddedLiteralConverter<awareness_conversationLiveState>))]
-        [JsonProperty("awareness_conversationLiveState:0")]
-        public awareness_conversationLiveState? awareness_conversationLiveState0 { get; set; }
+
+        // here the dynamic property name is like "integration:longtimestamp", like
+        // - awareness_conversationLiveState:1600066000000
+        // - awareness_conversationLiveState:0
+        [JsonIgnore]
+        [CollectionListForPrefix("awareness_conversationLiveState:")]
+        public List<awareness_conversationLiveState>? awareness_conversationLiveState { get; set; }
 
         [JsonConverter(typeof(EmbeddedLiteralConverter<List<MeetingContent>>))]
         public List<MeetingContent>? meetingContent { get; set; }
@@ -289,10 +293,18 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? pinned { get; set; } // goes along with properties importance, subject and links
     }
 
+    // EventMessage.type="EventMessage", EventMessage.resourceType="NewMessage", EventMessage.resource.type="Message", EventMessage.resource.messagetype="RichText/Media_Card", EventMessage.resource.threadtype="meeting"
+    public partial class MessageProperties
+    {
+        // note: first occured with a Polly poll sent by a user contained in this list
+        public List<OnBehalfOf>? onbehalfof { get; set; }
+
+    }
+
     // add more here
     public partial class MessageProperties
     {
-
+        ////////////////// ADD HERE
     }
 
     public class Emaildetails
@@ -373,5 +385,16 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public bool? alert { get; set; }
         public bool? alertInMeeting { get; set; }
         public string? externalResourceUrl { get; set; }
+    }
+
+    public class OnBehalfOf
+    {
+        public long? itemid { get; set; }
+        // "person", ...
+        public string? mentionType { get; set; }
+        // mri of user
+        public string? mri { get; set; }
+        // display name of user
+        public string? displayName { get; set; }
     }
 }

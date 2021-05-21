@@ -86,4 +86,17 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public BigInteger meetingNotesPageId { get; set; }
         public string sharepointPath { get; set; }
     }
+
+    // definitionId "com.microsoft.teamspace.tab.powerbi", subtype "powerbi"
+    // note: websiteUrl links to 
+    public partial class Settings
+    {
+        // a GUID
+        public string reports { get; set; }
+        // looks like a title
+        public string originatingTeam { get; set; }
+        // a GUID
+        public string originatingTeamId { get; set; }
+    }
+
 }

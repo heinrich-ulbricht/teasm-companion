@@ -40,6 +40,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string height { get; set; }
         public List<Column> columns { get; set; }
         public string id { get; set; }
+        public string style { get; set; }
+        public SelectAction selectAction { get; set; }
+
     }
 
     public partial class AdaptiveCardBody

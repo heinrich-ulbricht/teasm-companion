@@ -425,6 +425,12 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? isFederated { get; set; }
     }
 
+    // add more here
+    public partial class Threadproperties
+    {
+
+    }
+
     public class Memberproperties
     {
         // "Anonymous", ...
