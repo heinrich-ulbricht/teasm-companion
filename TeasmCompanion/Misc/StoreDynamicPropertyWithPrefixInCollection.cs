@@ -139,7 +139,7 @@ namespace TeasmCompanion.Misc
                         if (serializer.MissingMemberHandling == MissingMemberHandling.Error)
                         {
                             // Could not find member 'like' on object of type 'Emotions'. Path 'eventMessages[0].resource.annotationsSummary.emotions.like'
-                            throw new JsonSerializationException($"Could not find member '{jsonPropName}' on object of type '{objectType}'");
+                            throw new JsonSerializationException($"Could not find member '{jsonPropName}' on object of type '{objectType.FullName}'");
                         }
                     }
                 }

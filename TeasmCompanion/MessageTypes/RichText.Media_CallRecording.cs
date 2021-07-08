@@ -17,6 +17,10 @@ namespace TeasmCompanion.MessageTypes
 
     public class Uriobject
     {
+        // "1.0"
+        [JsonProperty("@format_version")]
+        public string format_version { get; set; }
+        // "Video.2/CallRecording.1", ...
         [JsonProperty("@type")]
         public string type { get; set; }
         [JsonProperty("@url_thumbnail")]

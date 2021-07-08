@@ -30,6 +30,8 @@ namespace TeasmCompanion.MessageTypes
 		public string friendlyName { get; set; }
 		// "0"
 		public string sharehistorytime { get; set; }
+		// "temp"
+		public string meetingMemberType { get; set; }
 	}
 
 }

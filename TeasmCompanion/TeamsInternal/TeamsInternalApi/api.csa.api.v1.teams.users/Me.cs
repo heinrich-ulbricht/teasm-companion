@@ -79,6 +79,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public long threadVersion { get; set; }
         public bool isDeleted { get; set; }
         public DateTime creationTime { get; set; }
+        public bool isShared { get; set; }
     }
 
     public class Teamsettings
@@ -221,6 +222,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public string sharepointSiteUrl { get; set; }
         public bool explicitlyAdded { get; set; }
         public List<Activemeetup> activeMeetups { get; set; }
+        public bool isShared { get; set; }
     }
 
     public class Consumptionhorizon
@@ -333,7 +335,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
 
     public class Settings
     {
-        // "extension"
+        // "extension", "webpage"
         public string subtype { get; set; }
         public string name { get; set; }
         public string url { get; set; }
@@ -361,6 +363,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public string file { get; set; }
         public string objectId { get; set; }
         public string suggestedTabName { get; set; }
+        // has been null so far; seen for subtype "webpage"
+        public object similarApp { get; set; }
     }
 
     public class Connectorprofile
@@ -402,12 +406,14 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public bool isMessagingDisabled { get; set; }
         public bool isMuted { get; set; }
         public bool isDisabled { get; set; }
-        // Bekannte Werte: chat, meeting, "sfbinteropchat"
+        // "chat", "meeting", "sfbinteropchat", ...
         public string chatType { get; set; }
+        // "None", ...
         public string interopConversationStatus { get; set; }
         public long conversationBlockedAt { get; set; }
         public bool hasTranscript { get; set; }
         public bool isSticky { get; set; }
+        // "Unknown"
         public string meetingPolicy { get; set; }
         public object meetingContent { get; set; }
         public DateTime lastLeaveAt { get; set; }
@@ -424,6 +430,10 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
         public DateTime unpinnedTime { get; set; }
         // set when hiding a chat
         public DateTime hiddenTime { get; set; }
+        public bool isConversationDeleted { get; set; }
+        public bool isExternal { get; set; }
+        // "unknown"
+        public string importState { get; set; }
 
     }
 

@@ -37,6 +37,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.conversation
         public string content { get; set; }
         public List<string> amsreferences { get; set; }
         public string from { get; set; }
+        // the tenant GUID
+        public string fromTenantId { get; set; }
         public string to { get; set; }
         public string imdisplayname { get; set; }
         public DateTime? composetime { get; set; }
