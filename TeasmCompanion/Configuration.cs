@@ -22,5 +22,6 @@ namespace TeasmCompanion
         public bool DebugClearLocalCacheOnStart { get; set; } = false;
         public bool DebugDisableEmailServerCertificateCheck { get; set; } = false;
         public string LogLevel { get; set; } = "Debug";
+        public List<string> ChromeNonDefaultProfileNames { get; set; } = new List<string>();
     }
 }

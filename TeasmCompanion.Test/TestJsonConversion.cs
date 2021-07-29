@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Xml;
 using TeasmCompanion.ProcessedTeamsObjects;
@@ -81,9 +82,11 @@ namespace TeasmCompanion.Test
             var tabInfos = result.eventMessages[0]?.resource?.properties?.tabInfos;
             var integrationInfos = result.eventMessages[0]?.resource?.properties?.integrationInfos;
             Assert.AreEqual(3, tabInfos?.Count);
-            Assert.IsNotNull(tabInfos?[0].id);
+            Assert.IsNotNull(tabInfos?.Values.First().id);
+            Assert.AreEqual("tab::00000000-0000-beef-0000-000000000000", tabInfos?.Keys.First());
             Assert.AreEqual(1, integrationInfos?.Count);
-            Assert.AreEqual("integrationid", integrationInfos?[0].integrationId);
+            Assert.AreEqual("integrationid", integrationInfos?.Values.First().integrationId);
+            Assert.AreEqual("integration:integrationid", integrationInfos?.Keys.First());
             Assert.AreEqual(1, result.eventMessages[0].resource?.properties?.links.Count);
 
         }

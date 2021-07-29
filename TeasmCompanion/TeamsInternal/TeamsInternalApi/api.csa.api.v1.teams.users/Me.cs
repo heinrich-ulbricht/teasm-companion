@@ -22,6 +22,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
     public class Metadata
     {
         public string syncToken { get; set; }
+        public bool isPartialData { get; set; }
     }
 
     public class Team

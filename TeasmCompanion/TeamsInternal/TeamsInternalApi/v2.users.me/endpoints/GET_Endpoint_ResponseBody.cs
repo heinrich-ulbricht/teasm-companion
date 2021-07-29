@@ -221,7 +221,6 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     // for contentType=="application/vnd.microsoft.card.adaptive" && content.type=="AdaptiveCard"
     public partial class CardContent
     {
-        //public string type { get; set; }
         public List<AdaptiveCardBody>? body { get; set; }
         // "https://adaptivecards.io/schemas/adaptive-card.json"
         [JsonProperty("$schema")]
@@ -229,6 +228,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         // "1.0"
         public string? version { get; set; }
         public MsTeams? msTeams { get; set; }
+        // those are the actions behind the three-dot menu of the card
+        public List<AdaptiveCardAction>? actions { get; set; }
 
     }
 
@@ -242,7 +243,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
 
     public class MsTeams
     {
+        // "full"
         public string? width { get; set; }
+        public bool? overflow { get; set; }
     }
 
 
@@ -449,4 +452,16 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? messagingMode { get; set; }
     }
 
+    // might be the same as the Action class
+    public class AdaptiveCardAction
+    {
+        public string? url { get; set; }
+        // "Open in Teams", "Download"
+        public string? title { get; set; }
+        // https://statics.teams.cdn.office.net/evergreen-assets/icons/microsoft_teams_logo_refresh.ico
+        public string? iconUrl { get; set; }
+        public MsTeams? msTeams { get; set; }
+        // "Action.OpenUrl"
+        public string? type { get; set; }
+    }
 }

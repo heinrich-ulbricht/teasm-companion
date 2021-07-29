@@ -94,6 +94,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public string? skypeguid { get; set; }
     }
 
+    // type "Message", messagetype "ThreadActivity/DeleteMember"
+    public partial class MessageProperties
+    {
+        // "DeleteUser"
+        public string? eventReason { get; set; }
+    }
+
     // this seems to be set if sending to or receiving from outside of Teams
     public partial class MessageProperties
     {
@@ -151,13 +158,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         // - "tab::00000000-0000-beef-0000-000000000000"
         // - "tab::19:meeting_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@thread.skype"
         [JsonIgnore]
-        [CollectionListForPrefix("tab::")]
-        public List<TabNotificationValue>? tabInfos { get; set; }
+        [CollectionDictForPrefix("tab::")]
+        public Dictionary<string, TabNotificationValue>? tabInfos { get; set; }
 
         // here the dynamic property name is like "integration:someid"
         [JsonIgnore]
-        [CollectionListForPrefix("integration:")]
-        public List<IntegrationValue>? integrationInfos { get; set; }
+        [CollectionDictForPrefix("integration:")]
+        public Dictionary<string, IntegrationValue>? integrationInfos { get; set; }
     }
 
     // Properties for EventMessage.type="EventMessage", EventMessage.resourceType="ThreadUpdate", EventMessage.resource.type="ThreadUpdate"
@@ -220,8 +227,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         // - awareness_conversationLiveState:1600066000000
         // - awareness_conversationLiveState:0
         [JsonIgnore]
-        [CollectionListForPrefix("awareness_conversationLiveState:")]
-        public List<awareness_conversationLiveState>? awareness_conversationLiveState { get; set; }
+        [CollectionDictForPrefix("awareness_conversationLiveState:")]
+        public Dictionary<string, awareness_conversationLiveState>? awareness_conversationLiveState { get; set; }
 
         [JsonConverter(typeof(EmbeddedLiteralConverter<List<MeetingContent>>))]
         public List<MeetingContent>? meetingContent { get; set; }

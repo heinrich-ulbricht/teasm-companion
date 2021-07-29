@@ -9,9 +9,9 @@ using System.Reflection;
 
 namespace TeasmCompanion.Misc
 {
-    public class CollectionListForPrefix : Attribute
+    public class CollectionDictForPrefix : Attribute
     {
-        public CollectionListForPrefix(string jsonPropertyPrefix) : base()
+        public CollectionDictForPrefix(string jsonPropertyPrefix) : base()
         {
             JsonPropertyPrefix = jsonPropertyPrefix;
         }
@@ -23,7 +23,7 @@ namespace TeasmCompanion.Misc
     /// This class allows to collect values of properties whose keys change at runtime but share a known prefix.
     /// 
     /// A sample would be the "tab::GUID" property where the GUID is not known beforehand but the "tab::" prefix is always the same. The values of those properties 
-    /// can be collected in a list marked with the CollectionListForPrefix("tab::") attribute.
+    /// can be collected in a dictionary marked with the CollectionDictForPrefix("tab::") attribute.
     /// </summary>
     public class StoreDynamicPropertyWithPrefixInCollection : JsonConverter
     {
@@ -93,44 +93,51 @@ namespace TeasmCompanion.Misc
                     var currentPrefix = jp.Name.StartsWithAny(prefixes, StringComparison.InvariantCultureIgnoreCase);
                     if (currentPrefix != null)
                     {
-                        // find collection list with matching prefix
-                        var collectionListProp = objectProps.FirstOrDefault(pi =>
-                            pi.CanWrite && (pi.GetCustomAttribute<CollectionListForPrefix>()?.JsonPropertyPrefix.Equals(currentPrefix, StringComparison.InvariantCultureIgnoreCase) ?? false));
+                        // find collection dict with matching prefix
+                        var collectionDictProp = objectProps.FirstOrDefault(pi =>
+                            pi.CanWrite && (pi.GetCustomAttribute<CollectionDictForPrefix>()?.JsonPropertyPrefix.Equals(currentPrefix, StringComparison.InvariantCultureIgnoreCase) ?? false));
 
-                        // we expect something like List<T> for the deserialized JSON property values of type T to store in
-                        if (!(collectionListProp.PropertyType.IsGenericType && collectionListProp.PropertyType.GetGenericTypeDefinition() == typeof(List<>)))
+                        // we expect something like Dictionary<string,T> for the deserialized JSON property values of type T to store in
+                        if (!(collectionDictProp.PropertyType.IsGenericType && collectionDictProp.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>)))
                         {
-                            // collection property ist not a generic list? this does not work
-                            throw new JsonSerializationException($"Collection list needs to be a generic list but is type '{collectionListProp.PropertyType}'");
+                            // collection property ist not a generic dict? this does not work
+                            throw new JsonSerializationException($"Collection dictionary needs to be a generic dictionary but is type '{collectionDictProp.PropertyType}'");
                         }
 
-                        var collectionListItemType = collectionListProp.PropertyType.GetGenericArguments()[0];
-                        // create list if it doesn't exist yet
-                        IList collectionList = collectionListProp.GetValue(existingValue) as IList;
-                        if (collectionList == null)
+                        var collectionDictKeyType = collectionDictProp.PropertyType.GetGenericArguments()[0];
+                        if (collectionDictKeyType != typeof(string)) 
                         {
-                            Type t = typeof(List<>).MakeGenericType(collectionListItemType);
-                            IList res = (IList)Activator.CreateInstance(t);
-
-                            collectionList = res;
-                            collectionListProp.SetValue(existingValue, collectionList);
+                            throw new JsonSerializationException($"Collection dictionary key has to be of type string but is '{collectionDictKeyType}'");
                         }
 
-                        object listElement;
-                        if (jp.Value?.Type == JTokenType.String && collectionListItemType != typeof(string))
+
+                        var collectionDictValueType = collectionDictProp.PropertyType.GetGenericArguments()[1];
+                        // create dict if it doesn't exist yet
+                        IDictionary collectionDict = collectionDictProp.GetValue(existingValue) as IDictionary;
+                        if (collectionDict == null)
                         {
-                            // if the JSON value is of type string and the generic list does NOT contain strings then we've got a nested JSON that we need to deserialize (like EmbeddedLiteralConverter does)
+                            Type t = typeof(Dictionary<,>).MakeGenericType(collectionDictKeyType, collectionDictValueType);
+                            IDictionary res = (IDictionary)Activator.CreateInstance(t);
+
+                            collectionDict = res;
+                            collectionDictProp.SetValue(existingValue, collectionDict);
+                        }
+
+                        object dictValue;
+                        if (jp.Value?.Type == JTokenType.String && collectionDictValueType != typeof(string))
+                        {
+                            // if the JSON value is of type string and the generic dict does NOT contain strings then we've got a nested JSON that we need to deserialize (like EmbeddedLiteralConverter does)
                             var json = (string)jp.Value;
                             using var subReader = new JsonTextReader(new StringReader(json));
-                            listElement = Activator.CreateInstance(collectionListItemType);
-                            serializer.Populate(subReader, listElement);
+                            dictValue = Activator.CreateInstance(collectionDictValueType);
+                            serializer.Populate(subReader, dictValue);
                         }
                         else
                         {
                             // not sure about this part; untested ^^
-                            listElement = jp.Value.ToObject(collectionListItemType, serializer);
+                            dictValue = jp.Value.ToObject(collectionDictValueType, serializer);
                         }
-                        collectionList.Add(listElement);
+                        collectionDict.Add(jsonPropName, dictValue);
                     }
                     else
                     {
@@ -139,7 +146,7 @@ namespace TeasmCompanion.Misc
                         if (serializer.MissingMemberHandling == MissingMemberHandling.Error)
                         {
                             // Could not find member 'like' on object of type 'Emotions'. Path 'eventMessages[0].resource.annotationsSummary.emotions.like'
-                            throw new JsonSerializationException($"Could not find member '{jsonPropName}' on object of type '{objectType.FullName}'");
+                            throw new JsonSerializationException($"Could not find member '{jsonPropName}' on object of type '{objectType}'");
                         }
                     }
                 }

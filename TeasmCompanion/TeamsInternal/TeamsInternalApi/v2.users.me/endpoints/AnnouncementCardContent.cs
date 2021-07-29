@@ -11,10 +11,10 @@
         public string src { get; set; }
         public int imageWidth { get; set; }
         public int imageHeight { get; set; }
-        public int adjWidth { get; set; }
-        public float adjHeight { get; set; }
-        public int newLeft { get; set; }
-        public float newTop { get; set; }
+        public double adjWidth { get; set; }
+        public double adjHeight { get; set; }
+        public double newLeft { get; set; }
+        public double newTop { get; set; }
         public string type { get; set; }
         public Loaddata loadData { get; set; }
         public string id { get; set; }

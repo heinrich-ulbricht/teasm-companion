@@ -56,6 +56,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string url { get; set; }
         public string websiteUrl { get; set; }
         public DateTime dateAdded { get; set; }
+        public object similarApp { get; set; }
     }
 
     // subtype "extension"; also has properties of subtype "webpage"
