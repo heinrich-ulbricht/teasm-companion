@@ -32,6 +32,7 @@ namespace TeasmCompanion.TeamsTokenRetrieval
         private readonly TeamsTokenPathes tokenPathes;
         private readonly LevelDbLogFileDecoder levelDbLogFileDecoder;
         private ILogger logger { get; }
+        private readonly Dictionary<string, DateTime> alreadyHandledFilePathes = new Dictionary<string, DateTime>();
 
         public TeamsTokenRetriever(ILogger logger, TeamsTokenPathes tokenPathes, LevelDbLogFileDecoder levelDbLogFileDecoder)
         {
@@ -236,7 +237,15 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                 {
                     try
                     {
+                        var fileLastWriteTime = File.GetLastWriteTime(path);
+                        if (alreadyHandledFilePathes.TryGetValue(path, out var previousFileLastWriteTime) && previousFileLastWriteTime == fileLastWriteTime)
+                        {
+                            logger.Debug("Already handled {Path}, skipping", path);
+                            break;
+                        }
+
                         await cmd.ExecuteAsync(cancellationToken);
+                        alreadyHandledFilePathes.Add(path, fileLastWriteTime);
                         logger.Debug("Handled {Path}", path);
                         break;
                     }
