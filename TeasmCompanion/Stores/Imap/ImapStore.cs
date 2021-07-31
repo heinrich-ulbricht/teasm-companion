@@ -126,7 +126,7 @@ namespace TeasmCompanion
                                 await childFolder.ReplaceAsync(id, message, MessageFlags.Seen, cancellationToken);
                             }
                         }
-                        if (currentCount % 10 == 0 || currentCount == maxCount)
+                        if (currentCount % 100 == 0 || currentCount == maxCount)
                         {
                             logger.Debug("[{TenantName}] Visited {CurrentCount} of {MaxCount} chat folders", ctx.Tenant.TenantName, currentCount, maxCount);
                         }
