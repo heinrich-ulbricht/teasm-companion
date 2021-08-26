@@ -103,7 +103,7 @@ Rename `config.template.json` to `config.json`. Then, in `config.json`, you can 
 | DebugClearLocalCacheOnStart | boolean | Clear the local cache on start; note: after application updates the cache is cleared automatically | false
 | LogLevel | text; one of "Debug" or "Information" | How much information do you want to see in the console and log files? | "Debug"
 
-Again, the IMAP configuration is the most important that must be set.
+Again, the IMAP configuration is the most important one.
 
 ## Logging
 
@@ -143,3 +143,7 @@ Configure your e-mail client to always show or prioritize HTML content. Some e-m
 ## Disclaimer
 
 There is no warranty. Assess your risk and proceed accordingly. Everything might break at any time.
+
+## Further reading
+
+To learn more go to the TeasmCompanion folder. The README there contains more details about how things are implemented.
