@@ -438,6 +438,12 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
 
     }
 
+    public partial class Chat
+    {
+        // new as of 08/2021
+        public Quickreplyaugmentation quickReplyAugmentation { get; set; }
+    }
+
     public partial class Chat : IChatChangeInfo
     {
         public string Id => id;
@@ -485,6 +491,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
 
         public string organizerId { get; set; }
         public string tenantId { get; set; }
+
+        // like: "https://teams.microsoft.com/l/meetup-join/19%3ameeting_000000000000000000000000000000000000000000000000%40thread.v2/0?context=%7b%22Tid%22%3a%2200000000-0000-0000-0000-000000000000%22%2c%22Oid%22%3a%2200000000-0000-0000-0000-000000000000%22%7d"
+        public string meetingJoinUrl { get; set; }
     }
 
     public class Eventrecurrencerange

@@ -35,7 +35,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.conversation
         // text (can be combined with messagetype RichText/Html, seemingly for file links)
         public string contenttype { get; set; }
         public string content { get; set; }
-        public List<string> amsreferences { get; set; }
+        // TBD: this sometimes is List<string> and sometimes just a JSON string literal of a list (like "amsreferences": "[\"0-weu-d13-00000000000000000000000000000000\"]"); so the type changes
+        // JSON literal type observed on a notification (event message)
+        public object amsreferences { get; set; }
         public string from { get; set; }
         // the tenant GUID
         public string fromTenantId { get; set; }

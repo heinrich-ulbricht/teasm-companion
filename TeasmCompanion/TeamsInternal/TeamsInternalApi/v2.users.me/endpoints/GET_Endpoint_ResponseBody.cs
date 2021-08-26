@@ -76,6 +76,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public Memberproperties? memberProperties { get; set; }
         // note: this seems to be a string?ified JSON object as well
         public string? cortanaSettings { get; set; }
+        // multiple types possible; see note on Message.amsreferences
+        public object? amsreferences { get; set; }
     }
 
     // for resourceType="MessageUpdate" (many missing but still)
