@@ -162,4 +162,4 @@ There is none. This is a fun project to explore, fiddle and learn.
 | [Sensitive Information Enricher](https://github.com/collector-bank/serilog-enrichers-sensitiveinformation) for Serilog | Stripping sensitive tokens from log files | [Apache 2.0](https://github.com/collector-bank/serilog-enrichers-sensitiveinformation/blob/master/LICENSE)
 | [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp) | Handling downloaded images | [Apache 2.0](https://github.com/SixLabors/ImageSharp/blob/master/LICENSE)
 
-Note: License files are included in the "License Files" folder.
+_Note: License files are included in the "License Files" folder._
