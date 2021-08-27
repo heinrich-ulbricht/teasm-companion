@@ -423,6 +423,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? topics { get; set; }
         // a GUID
         public string? groupId { get; set; }
+        // "True"
+        public string? uniquerosterthread { get; set; }
     }
     public partial class Threadproperties
     {

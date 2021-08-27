@@ -27,12 +27,12 @@ namespace TeasmCompanion
             return string.Join(newVal, temp);
         }
 
-        public static string? MakeSafeFolderName(this string? s, char directorySeparator)
+        public static string MakeSafeFolderName(this string? s, char directorySeparator)
         {
-            return s?.Replace(directorySeparator, '_').Replace('/', '_');
+            return s?.Replace(directorySeparator, '_').Replace('/', '_') ?? string.Empty;
         }
 
-        public static string? MakeSafeFolderName(this IMailFolder folder, string? s)
+        public static string MakeSafeFolderName(this IMailFolder folder, string? s)
         {
             return s.MakeSafeFolderName(folder.DirectorySeparator);
         }

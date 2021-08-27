@@ -463,10 +463,79 @@ namespace TeasmCompanion
             }
         }
 
+        private class ServerLimits
+        {
+            public int MaximumFolderNameBytes { get; set; }
+            public int MaximumFolderPathBytes { get; set; }
+        }
+
+        // limits of Dovecot: https://doc.dovecot.org/admin_manual/namespaces/#folder-name-lengths
+        // TBD: determine limits dynamically: https://stackoverflow.com/questions/68948809/imap-how-to-determine-maximum-allowed-folder-name-and-path-length
+        private ServerLimits GetEmailServerLimits()
+        {
+            return new ServerLimits
+            {
+                MaximumFolderNameBytes = 255,
+                MaximumFolderPathBytes = 254
+            };
+        }
+
+        /*
+         * Shortens a folder name to a supported length given the server limits.
+         * 
+         * TBD: Cache already calculated shortened path names
+         * */
+        private string ShortenFolderNameToServerLimits(IMailFolder? parentFolder, string potentialFolderName, int additionalReservedBytesForSubfoldersIncludingDelimiters, ServerLimits serverLimits)
+        {
+            if (parentFolder == null)
+            {
+                return potentialFolderName;
+            }
+
+            // use mUTF-7 encoding (just assume UTF-8 is not being used)
+            var parentFolderPathBytes = ImapEncoding.Encode(parentFolder.FullName).Length; // this encodes e.g. "ä" to several characters which count against the overal byte limit
+            var potentialFolderNameBytes = ImapEncoding.Encode(potentialFolderName).Length;
+            // respect folder _path_ length limit
+            var bytesLeftForNewFolderName = 
+                serverLimits.MaximumFolderPathBytes 
+                - 1 /* directory separator */ 
+                - parentFolderPathBytes
+                - additionalReservedBytesForSubfoldersIncludingDelimiters;
+
+            if (bytesLeftForNewFolderName < 1)
+            {
+                throw new TeasmCompanionException($"Cannot create folder with name '{potentialFolderName}' because it would exceed the server limits");
+            }
+
+            // respect folder _name_ length limit
+            bytesLeftForNewFolderName = Math.Min(bytesLeftForNewFolderName, serverLimits.MaximumFolderNameBytes);
+
+            var potentialFolderNameShortened = potentialFolderName;
+            while (potentialFolderNameBytes > serverLimits.MaximumFolderNameBytes || potentialFolderNameBytes > bytesLeftForNewFolderName)
+            {
+                if (potentialFolderNameShortened.Length <= 1)
+                {
+                    break;
+                }
+
+                potentialFolderNameShortened = potentialFolderNameShortened[0..^1];
+                potentialFolderNameBytes = ImapEncoding.Encode(potentialFolderNameShortened).Length;
+            }
+
+            if (potentialFolderName != potentialFolderNameShortened)
+            {
+                logger.Debug("Shortened potential folder name '{Name}' to '{ShorterName}' due to server name and path length restrictions", potentialFolderName, potentialFolderNameShortened);
+            }
+            return potentialFolderNameShortened;
+        }
+
         private async Task<IMailFolder> GetOrCreateChatFolderAsync(ImapClient imapClient, TeamsDataContext ctx, string chatTitle)
         {
             var (_, tenantChatsFolder) = await GetOrCreateTenantAndTenantChatsFolderAsync(imapClient, ctx);
             var safeChatFolderName = tenantChatsFolder.MakeSafeFolderName(chatTitle);
+            var serverLimits = GetEmailServerLimits();
+            safeChatFolderName = ShortenFolderNameToServerLimits(tenantChatsFolder, safeChatFolderName, 1 /* for dir separator */ + ImapEncoding.Encode("__").Length, serverLimits);
+
             IMailFolder? chatFolder = null;
             try
             {
@@ -478,8 +547,19 @@ namespace TeasmCompanion
             }
             if (chatFolder == null)
             {
-                chatFolder = await tenantChatsFolder.CreateAsync(safeChatFolderName, true);
-                await chatFolder.SubscribeAsync();
+                try
+                {
+                    chatFolder = await tenantChatsFolder.CreateAsync(safeChatFolderName, true);
+                    await chatFolder.SubscribeAsync();
+                }
+                catch (ImapCommandException ex)
+                {
+                    if (ex.Response == ImapCommandResponse.No && (ex.ResponseText.Contains("too long", StringComparison.InvariantCultureIgnoreCase) || ex.ResponseText.Contains("not found", StringComparison.InvariantCultureIgnoreCase)))
+                    {
+                        logger.Warning("Could not create folder for chat '{FolderName}' because it is too long, even after shortening it to '{ShortFolderName}'", chatTitle, safeChatFolderName);
+                    }
+                    throw;
+                }
             }
             return chatFolder;
         }
