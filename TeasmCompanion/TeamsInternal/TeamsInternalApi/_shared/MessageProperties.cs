@@ -52,6 +52,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         // e.g. for announcements the small sub-headline
         public string? subject { get; set; }
         public List<Emotions>? emotions { get; set; }
+        public List<Emotions>? deltaEmotions { get; set; }
         public List<object?>? ams_references { get; set; }
 
         public DateTime? lastimreceivedtime { get; set; }
@@ -92,6 +93,11 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi._shared
         public BigInteger? origincontextid { get; set; }
         // seems to be identical to the "callid" of a running call
         public string? skypeguid { get; set; }
+        // e.g. "languages=de:100;sk:65;nl:65;&detector=Bling"
+        public string? languageStamp { get; set; }
+        public long? hardDeleteTime { get; set; }
+        // e.g. "ThreadServiceDeleteMessage"
+        public string? hardDeleteReason { get; set; }
     }
 
     // type "Message", messagetype "ThreadActivity/DeleteMember"

@@ -64,6 +64,8 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.conversation
 
     public class Botfileproperties
     {
+        // "https:\/\/contoso-my.sharepoint.com\/personal\/USERNAME\/_layouts\/15\/download.aspx?UniqueId=GUID&Translate=false&tempauth=TOKEN&ApiVersion=2.0"
+        public string? url { get; set; }
     }
 
     public class Filepreview

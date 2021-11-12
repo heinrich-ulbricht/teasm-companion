@@ -23,6 +23,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.api.csa.api.v1.teams.use
     {
         public string syncToken { get; set; }
         public bool isPartialData { get; set; }
+        public object conversationContext { get; set; }
     }
 
     public class Team

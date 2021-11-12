@@ -72,5 +72,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public List<Item> items { get; set; }
         public string text { get; set; }
         public bool wrap { get; set; }
+        // "center"
+        public string verticalContentAlignment { get; set; }
     }
 }
