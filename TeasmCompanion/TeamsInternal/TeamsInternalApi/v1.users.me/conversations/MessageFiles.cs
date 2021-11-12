@@ -71,6 +71,10 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v1.users.me.conversation
     public class Filepreview
     {
         public string? previewUrl { get; set; }
+
+        public long previewHeight { get; set; }
+
+        public long previewWidth { get; set; }        
     }
 
     public class Filechicletstate
