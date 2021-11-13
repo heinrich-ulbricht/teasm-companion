@@ -332,6 +332,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public int? readerCount { get; set; }
         public Rolecounts? roleCounts { get; set; }
         public int? externalMemberCount { get; set; }
+        public int? explicitlyAddedCount { get; set; }
     }
 
     public class Rolecounts

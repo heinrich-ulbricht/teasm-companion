@@ -45,7 +45,9 @@ namespace TeasmCompanion.MessageTypes
         public A a { get; set; }
         public Originalname OriginalName { get; set; }
         public Meetingorganizerid MeetingOrganizerId { get; set; }
+        public MeetingorganizerTenantId MeetingOrganizerTenantId { get; set; }
         public Recordinginitiatorid RecordingInitiatorId { get; set; }
+        public ICalUid ICalUid { get; set; }
         public List<Identifier> Identifiers { get; set; }
         public List<Recordingcontent> RecordingContent { get; set; }
 //        public List<Requestedexport> RequestedExports { get; set; }
@@ -118,6 +120,18 @@ namespace TeasmCompanion.MessageTypes
         public string value { get; set; }
     }
 
+    public class MeetingorganizerTenantId
+    {
+        [JsonProperty("@value")]
+        public string value { get; set; }
+    }
+
+    public class ICalUid
+    {
+        [JsonProperty("@value")]
+        public string value { get; set; }
+    }
+
     public class Recordinginitiatorid
     {
         [JsonProperty("@value")]
@@ -155,6 +169,9 @@ namespace TeasmCompanion.MessageTypes
         public DateTime timestamp { get; set; }
         [JsonProperty("@duration")]
         public string duration { get; set; }
+        [JsonProperty("@canVideoExpire")]
+        // "False"
+        public string canVideoExpire { get; set; }
         public List<Item> item { get; set; }
     }
 
