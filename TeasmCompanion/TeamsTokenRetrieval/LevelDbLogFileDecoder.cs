@@ -13,7 +13,6 @@ namespace TeasmCompanion.TeamsTokenRetrieval
     public class LevelDbLogFileDecoder
     {
         private readonly ILogger logger;
-        private readonly TeamsTokenPathes tokenPathes;
 
         enum LevelDbRecordTypes
         {
@@ -23,14 +22,13 @@ namespace TeasmCompanion.TeamsTokenRetrieval
             LAST = 4
         }
 
-        public LevelDbLogFileDecoder(ILogger logger, TeamsTokenPathes tokenPathes)
+        public LevelDbLogFileDecoder(ILogger logger)
         {
             this.logger = logger.ForContext<LevelDbLogFileDecoder>();
-            this.tokenPathes = tokenPathes;
         }
 
         // implemented based on information from https://github.com/google/leveldb/blob/master/doc/log_format.md
-        public async Task<List<string>> ReadLevelDbLogFilesAsync(Action<string> handleFullRecord, CancellationToken cancellationToken = default)
+        public async Task<List<string>> ReadLevelDbLogFilesAsync(TeamsTokenPathes tokenPathes, Action<string> handleFullRecord, CancellationToken cancellationToken = default)
         {
             return await Task.Run(() =>
             {

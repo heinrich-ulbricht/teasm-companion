@@ -18,6 +18,8 @@ using System.Threading;
 using TeasmCompanion.Misc;
 using Newtonsoft.Json;
 using TeasmCompanion.TeamsTokenRetrieval.Model;
+using TeasmBrowserAutomation.Credentials;
+using TeasmBrowserAutomation.Automation;
 
 #nullable enable
 
@@ -33,8 +35,10 @@ namespace TeasmCompanion.TeamsTokenRetrieval
         private readonly LevelDbLogFileDecoder levelDbLogFileDecoder;
         private ILogger logger { get; }
         private readonly Dictionary<string, DateTime> alreadyHandledFilePathes = new Dictionary<string, DateTime>();
+        private readonly Configuration configuration;
+        private readonly LoginAutomation loginAutomation;
 
-        public TeamsTokenRetriever(ILogger logger, TeamsTokenPathes tokenPathes, LevelDbLogFileDecoder levelDbLogFileDecoder)
+        public TeamsTokenRetriever(ILogger logger, Configuration configuration, TeamsTokenPathes tokenPathes, LevelDbLogFileDecoder levelDbLogFileDecoder)
         {
             this.logger = logger.ForContext<TeamsTokenRetriever>();
 
@@ -42,6 +46,8 @@ namespace TeasmCompanion.TeamsTokenRetrieval
             TokenSource = tokenSource.Distinct(t => (t.TokenType, t.UserId, t.ValidFromUtc, t.ValidToUtc));
             this.tokenPathes = tokenPathes;
             this.levelDbLogFileDecoder = levelDbLogFileDecoder;
+            this.configuration = configuration;
+            this.loginAutomation = new LoginAutomation(configuration.MobileNumberForSignalMfaRelay);
         }
 
         public TeamsUserTokenContext? GetUserTokenContext(TeamsParticipant userId, bool createIfNotExisting)
@@ -98,10 +104,14 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                 ExtractToken(keyAndValue.Substring(matches.Groups[2].Index + matches.Groups[2].Length), tokenType, getUserIdAndTokenPattern, generateAuthHeader);
             }
         }
-
         public async Task<List<string>> CaptureTokensFromLevelDbLogFilesAsync(CancellationToken cancellationToken = default)
         {
-            return await levelDbLogFileDecoder.ReadLevelDbLogFilesAsync(fullRecord => ExtractTokensFromText(fullRecord), cancellationToken);
+            return await CaptureTokensFromLevelDbLogFilesAsync(this.tokenPathes, cancellationToken);
+        }
+
+        private async Task<List<string>> CaptureTokensFromLevelDbLogFilesAsync(TeamsTokenPathes tokenPathes, CancellationToken cancellationToken = default)
+        {
+            return await levelDbLogFileDecoder.ReadLevelDbLogFilesAsync(tokenPathes, fullRecord => ExtractTokensFromText(fullRecord), cancellationToken);
         }
 
         private void ExtractEndpoints(string value)
@@ -193,6 +203,11 @@ namespace TeasmCompanion.TeamsTokenRetrieval
 
         public async Task CaptureTokensFromLevelDbLdbFilesAsync(CancellationToken cancellationToken = default)
         {
+            await CaptureTokensFromLevelDbLdbFilesAsync(this.tokenPathes, cancellationToken);
+        }
+
+        private async Task CaptureTokensFromLevelDbLdbFilesAsync(TeamsTokenPathes tokenPathes, CancellationToken cancellationToken = default)
+        {
             logger.Debug("Start: CaptureTokens...");
             var ldbFiles = tokenPathes.GetLevelDbLdbFilePathes();
             var stdOutBuffer = new StringBuilder();
@@ -245,7 +260,10 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                         }
 
                         await cmd.ExecuteAsync(cancellationToken);
-                        alreadyHandledFilePathes.Add(path, fileLastWriteTime);
+                        if (!alreadyHandledFilePathes.TryAdd(path, fileLastWriteTime))
+                        {
+                            alreadyHandledFilePathes[path] = fileLastWriteTime;
+                        }
                         logger.Debug("Handled {Path}", path);
                         break;
                     }
@@ -315,6 +333,52 @@ namespace TeasmCompanion.TeamsTokenRetrieval
         public IEnumerable<TeamsUserTokenContext> GetIdentitiesWithToken(TeamsTokenType tokenType)
         {
             return userTokenContexts.Values.Where(ctx => ctx[tokenType] != null);
+        }
+
+        public async Task CaptureTokensFromAutomatedBrowsersAsync(CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(configuration.ChromeBinaryPath) || string.IsNullOrWhiteSpace(configuration.WebDriverDirPath))
+            {
+                return;
+            }
+
+            foreach (var autoLoginTenant in configuration.AutoLogin)
+            {
+                if (string.IsNullOrWhiteSpace(autoLoginTenant.AccountEmail))
+                {
+                    logger.Warning("AccountEmail of configured auto-login is empty but mustn't be. Skipping tenant {AutoLoginAccount}.", autoLoginTenant);
+                    continue;
+                }
+
+                var passwordSource = new PasswordSource();
+                var (password, userDataDirPath) = await passwordSource.GetPasswordAndUserDataDirForAsync(autoLoginTenant.AccountEmail, autoLoginTenant.TenantId);
+
+                logger.Information("Starting auto-login for {AutoLoginAccount}...", autoLoginTenant);
+                var result = await loginAutomation.LogInToTeamsAsync(
+                    configuration.ChromeBinaryPath, 
+                    configuration.WebDriverDirPath, 
+                    userDataDirPath, 
+                    autoLoginTenant.AccountEmail, 
+                    password, 
+                    (async () => { 
+                        var (newPassword, _) = await passwordSource.GetPasswordAndUserDataDirForAsync(autoLoginTenant.AccountEmail, autoLoginTenant.TenantId, true); 
+                        return newPassword; 
+                    }),                    
+                    autoLoginTenant.TenantId, 
+                    false);
+                if (result == LoginStage.Teams)
+                {
+                    logger.Information("Auto-login for {AutoLoginAccount} was successful!", autoLoginTenant);
+                    var path = Path.Combine(userDataDirPath, "Default", "Local Storage", "leveldb");
+                    var tokenPathes = new TeamsTokenPathesCustom(this.configuration, new List<string>() {path});
+                    await CaptureTokensFromLevelDbLdbFilesAsync(tokenPathes, cancellationToken);
+                    await CaptureTokensFromLevelDbLogFilesAsync(tokenPathes, cancellationToken);
+
+                } else 
+                {
+                    logger.Warning("Auto-login for {AutoLoginAccount} failed, result stage: {Stage}", autoLoginTenant, result);
+                }
+            }            
         }
     }
 }

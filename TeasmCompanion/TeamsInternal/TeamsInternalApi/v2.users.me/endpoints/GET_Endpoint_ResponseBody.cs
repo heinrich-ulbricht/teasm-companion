@@ -152,11 +152,13 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string? contentType { get; set; }
 
         // "com.microsoftstream.embed.skypeteamstab", or some GUID
+        // ca9e26b7-dce5-44a0-b2b7-a70a3d65ce25 = GitHub app
         public string? appId { get; set; }
-        // "Stream"
+        // "Stream", "GitHub"
         public string? appName { get; set; }
         // "de-de"
         public string? locale { get; set; }
+        // "https://statics.teams.cdn.office.net/evergreen-assets/ThirdPartyApps/ca9e26b7-dce5-44a0-b2b7-a70a3d65ce25_largeImage.png?v=1.3" for GitHub app
         public string? appIcon { get; set; }
     }
 

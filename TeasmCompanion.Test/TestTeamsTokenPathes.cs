@@ -215,9 +215,9 @@ namespace TeasmCompanion.Test
     }
 }
 ";
-            var tokenPathes = new TeamsTokenPathes(new Configuration());
+            var tokenPathes = new TeamsTokenPathesSystem(new Configuration());
             var basePath = @"C:\Temp";
-            var profilePathes = tokenPathes.GetChromeProfilePathesFromString(basePath, json);
+            var profilePathes = TeamsTokenPathes.GetChromeProfilePathesFromString(basePath, json);
             Assert.AreEqual(2, profilePathes.Count, "Unexpected number of custom profiles");
             Assert.AreEqual("Profile 1 Name", profilePathes.First().Key);
             Assert.AreEqual(@"C:\Temp\Profile 1", profilePathes.First().Value);

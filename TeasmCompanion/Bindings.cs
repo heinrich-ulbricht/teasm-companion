@@ -61,6 +61,7 @@ namespace TeasmCompanion
             Bind<ITeamsChatStore>().To<ImapStore>().InSingletonScope();
             Bind<IProcessedMessageFactory>().ToFactory();
             Bind<IProcessedNotificationMessageFactory>().ToFactory();
+            Bind<TeamsTokenPathes>().To<TeamsTokenPathesSystem>().InSingletonScope();
         }
 
         private LoggerConfiguration GetLoggerConfiguration(string loglevel)

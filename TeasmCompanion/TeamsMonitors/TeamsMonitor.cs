@@ -148,8 +148,11 @@ namespace TeasmCompanion
                 logger.Debug("Starting token retrieval loop");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    await tokens.CaptureTokensFromLevelDbLogFilesAsync(cancellationToken);
-                    await tokens.CaptureTokensFromLevelDbLdbFilesAsync(cancellationToken);
+                    var tasks = new List<Task>();
+                    tasks.Add(tokens.CaptureTokensFromLevelDbLogFilesAsync(cancellationToken));
+                    tasks.Add(tokens.CaptureTokensFromLevelDbLdbFilesAsync(cancellationToken));
+                    tasks.Add(tokens.CaptureTokensFromAutomatedBrowsersAsync(cancellationToken));
+                    Task.WaitAll(tasks.ToArray(), cancellationToken);
                     await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
                 }
             }

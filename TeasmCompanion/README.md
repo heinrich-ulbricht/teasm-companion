@@ -29,6 +29,16 @@ It seems to be impossible to find a .NET-based library to properly access LevelD
 
 You find everything token retrieval-related in the `TeamsTokenRetrieval` folder, including the list of local storage pathes Teasm Companion handles.
 
+## Login automation
+
+TeasmCompanion is able to automate the browser-based Teams authentication dialog - see the parent directory README for details on how to configure this.
+
+Login automation uses Selenium to automate the Chrome browser. It will navigate to the browser-based version of Teams and tries to fill in all information needed to authenticate. This will succeed for user names, passwords and checkboxes like "keep me signed in". Only the second factor for multi-factor authentication needs to be entered/unlocked manually by a human.
+
+Once the authentication succeeded the tokens will be extracted from this Teams session as well.
+
+The automation is optional and experimental. You can test and inspect its functionality in the project `TeasmBrowserAutomation`.
+
 ## Where does Teasm Companion store chat messages?
 
 Teasm Companion stores all chat-related data as e-mails via IMAP. Server host name, port and credentials are configured in `config.json`. Thorough testing has been done using a local Dovecot IMAP server.

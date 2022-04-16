@@ -25,6 +25,7 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
         public string altText { get; set; }
         public string horizontalAlignment { get; set; }
         public string url { get; set; }
+        // "FactSet", ...
         public string type { get; set; }
         public bool isSubtle { get; set; }
         public string size { get; set; }
@@ -45,9 +46,24 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
 
     }
 
+    // for item type "FactSet"
+    public partial class Item
+    {
+        public List<Fact> facts { get; set; }
+        public bool separator { get; set; }
+    }
+
+    public class Fact
+    {
+        // e.g. for GitHub app "Last Updated:", "Forks:"
+        public string title { get; set; }
+        // e.g. "3 hours ago", "481"
+        public string value { get; set; }
+    }
+
     public partial class AdaptiveCardBody
     {
-        public List<BodyElement> items { get; set; }
+        public List<Item> items { get; set; }
         public SelectAction selectAction { get; set; }
         public string id { get; set; }
     }
@@ -60,18 +76,9 @@ namespace TeasmCompanion.TeamsInternal.TeamsInternalApi.v2.users.me.endpoints
     }
 
 
-    public class BodyElement
+    public partial class Item
     {
-        public List<Column> columns { get; set; }
-        public SelectAction selectAction { get; set; }
-        public string id { get; set; }
-        public string spacing { get; set; }
-        public bool separator { get; set; }
-        public string height { get; set; }
-        public string type { get; set; }
         public List<Item> items { get; set; }
-        public string text { get; set; }
-        public bool wrap { get; set; }
         // "center"
         public string verticalContentAlignment { get; set; }
     }

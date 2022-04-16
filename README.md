@@ -41,8 +41,8 @@ It's not feasible for a variety of reasons.
 
 The following is needed to run Teasm Companion:
 
-* Windows 10 or Linux (tested on Fedora 33)
-* .NET 5.0
+* Windows 10 or Linux (tested on Fedora 33 & 34)
+* .NET 6.0
 * A local IMAP server, see section "You need an IMAP server" below for details
 * `ldbdump.exe` (or `ldbdump` on Linux) - which is included in this repo - must be present and executable, see [TeamsTokenRetrieval/precompiled/README.md](TeasmCompanion/TeamsTokenRetrieval/precompiled/README.md) for details; you can build it yourself if you want, instructions are in the README
 
@@ -102,6 +102,32 @@ Rename `config.template.json` to `config.json`. Then, in `config.json`, you can 
 | DebugDisableEmailServerCertificateCheck | boolean | Ignore IMAP server certificate errors; use this for local IMAP servers or testing | false
 | DebugClearLocalCacheOnStart | boolean | Clear the local cache on start; note: after application updates the cache is cleared automatically | false
 | LogLevel | text; one of "Debug" or "Information" | How much information do you want to see in the console and log files? | "Debug"
+
+Those options are specific to login automation (which is entirely optional!):
+
+| Setting | Data type | Meaning | Sample value
+|---------|-----------|---------|-------------
+| AutoLogin | JSON list  | Tenants to automate the log in for | see sample below
+| ChromeBinaryPath | text | Absolute path to chrome binary | "/usr/bin/chromium-browser"
+| WebDriverDirPath | text | Absolute path to the directory where the web driver is located; note: driver and Chrome version must match otherwise the program will throw | "/home/user/Portable"
+| MobileNumberForSignalMfaRelay | text | Mobile number for optional MFA relay via Signal Messenger | "+4915701234567"
+
+Sample value for the `AutoLogin` property which will try to log Megan into two tenants:
+
+```json
+[
+    {
+      "AccountEmail": "megan.bowen@contoso.com",
+      "TenantId": "c0bbfdb8-f4bf-458c-bed5-a7d832eb89f6",
+      "DisplayName": "Contoso Inc"
+    },
+    {
+      "AccountEmail": "megan.bowen@contoso.com",
+      "TenantId": "c0bbfdb8-f4bf-458c-bed5-a7d832eb89f6",
+      "DisplayName": "Adatum GmbH"
+    }
+]
+```
 
 Again, the IMAP configuration is the most important one.
 

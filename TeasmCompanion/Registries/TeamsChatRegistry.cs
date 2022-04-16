@@ -65,8 +65,9 @@ namespace TeasmCompanion.Stores
 
         private async Task ClearChatIndexCache(TeamsDataContext ctx)
         {
-            logger.Debug("[{TenantName}] Clearing chat index cache", ctx.Tenant.TenantName);
+            logger.Debug("[{TenantName}] Clearing chat index cache...", ctx.Tenant.TenantName);
             _ = await BlobCache.UserAccount.InvalidateObject<Dictionary<string, TeamsChatIndexEntry>>($"ts.{ctx.Tenant.TenantId}.chatIndex");
+            logger.Debug("[{TenantName}] DONE: Clearing chat index cache", ctx.Tenant.TenantName);
         }
 
         private async Task UpdateChatIndexCacheEntry(TeamsDataContext ctx, ProcessedChat? chat)
