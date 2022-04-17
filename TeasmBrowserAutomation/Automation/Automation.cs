@@ -271,15 +271,18 @@ namespace TeasmBrowserAutomation.Automation
         private static LoginStage WaitForLoginStageToChange(IWebDriver driver, LoginStage oldStage, string accountEmail)
         {
             var currentLoginStage = GetCurrentLoginStage(driver, accountEmail);
-            var maxRetrySecs = 60;
-            var currentRetrySecs = 0;
+            var maxRetryTimeSpan = TimeSpan.FromSeconds(30);
+            if (oldStage == LoginStage.MfaCodeEntry)
+            {
+                maxRetryTimeSpan = TimeSpan.FromMinutes(5); // give more time for MFA code entry; may need to test and adjust
+            }
+            var startTime = DateTime.Now;
             while (currentLoginStage == oldStage)
             {
                 currentLoginStage = GetCurrentLoginStage(driver, accountEmail);
                 Thread.Sleep(1000);
-                currentRetrySecs++;
 
-                if (currentRetrySecs >= maxRetrySecs)
+                if (DateTime.Now - startTime >= maxRetryTimeSpan)
                 {
                     return oldStage;
                 }
@@ -322,6 +325,9 @@ namespace TeasmBrowserAutomation.Automation
                     BinaryLocation = chromeBinaryPath ?? ""
                 };
                 options.AddArgument($"--user-data-dir={userDataDirPath}");
+                // disable images to speed up loading; not using this as the image indicates which tenant we are signing in to
+                // 1 = enabled, 2 = disabled
+                // options.AddUserProfilePreference("profile.default_content_setting_values.images", 2);
                 options.UseSpecCompliantProtocol = true;
                 try
                 {
@@ -329,7 +335,7 @@ namespace TeasmBrowserAutomation.Automation
                     WebDriverWait wait10 = new(driver, TimeSpan.FromSeconds(10));
                     WebDriverWait wait60 = new(driver, TimeSpan.FromSeconds(60));
                     // note: a set login_hint used to skip the user name entry page of the login experience; lately it just pre-fills the user name field
-                    var teamsUrl = $"https://teams.microsoft.com?login_hint={username}";
+                    var teamsUrl = $"https://teams.microsoft.com/_#/apps?login_hint={username}";
                     if (!string.IsNullOrEmpty(tenantId))
                     {
                         teamsUrl = $"{teamsUrl}&tenantId={tenantId}";
@@ -404,6 +410,9 @@ namespace TeasmBrowserAutomation.Automation
                             aadTileInstance.Click();
                             break;
                         case LoginStage.Kmsi:
+                            // "Don't show this again"
+                            var dontShowThisAgainCheckbox = driver.FindElement(By.Id("KmsiCheckboxField"));
+                            dontShowThisAgainCheckbox.Click();
                             submitButton = driver.FindElement(nextButton);
                             submitButton.Click();
                             break;

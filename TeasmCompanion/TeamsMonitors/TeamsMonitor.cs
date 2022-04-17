@@ -151,9 +151,10 @@ namespace TeasmCompanion
                     var tasks = new List<Task>();
                     tasks.Add(tokens.CaptureTokensFromLevelDbLogFilesAsync(cancellationToken));
                     tasks.Add(tokens.CaptureTokensFromLevelDbLdbFilesAsync(cancellationToken));
+                    // todo: renew based on token lifetimes
                     tasks.Add(tokens.CaptureTokensFromAutomatedBrowsersAsync(cancellationToken));
                     Task.WaitAll(tasks.ToArray(), cancellationToken);
-                    await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMinutes(55), cancellationToken);
                 }
             }
             finally
