@@ -351,25 +351,24 @@ namespace TeasmCompanion.TeamsTokenRetrieval
                 }
 
                 var passwordSource = new PasswordSource();
-                var (password, userDataDirPath) = await passwordSource.GetPasswordAndUserDataDirForAsync(autoLoginTenant.AccountEmail, autoLoginTenant.TenantId);
+                var automationContext = new AutomationContext(autoLoginTenant.AccountEmail, autoLoginTenant.TenantId, autoLoginTenant.DisplayName);
 
                 logger.Information("Starting auto-login for {AutoLoginAccount}...", autoLoginTenant);
                 var result = await loginAutomation.LogInToTeamsAsync(
                     configuration.ChromeBinaryPath, 
                     configuration.WebDriverDirPath, 
-                    userDataDirPath, 
-                    autoLoginTenant.AccountEmail, 
-                    password, 
-                    (async () => { 
-                        var (newPassword, _) = await passwordSource.GetPasswordAndUserDataDirForAsync(autoLoginTenant.AccountEmail, autoLoginTenant.TenantId, true); 
-                        return newPassword; 
+                    context: automationContext,
+                    (async (oldContext, discardExisting) => { 
+                        return await passwordSource.CloneAndUpdatePasswordAsync(oldContext, discardExisting); 
                     }),                    
-                    autoLoginTenant.TenantId, 
+                    (async (oldContext, mfaTenant, discardExisting) => { 
+                        return await passwordSource.CloneAndUpdateTotpKeyAsync(oldContext, mfaTenant, discardExisting); 
+                    }),                    
                     false);
                 if (result == LoginStage.Teams)
                 {
                     logger.Information("Auto-login for {AutoLoginAccount} was successful!", autoLoginTenant);
-                    var path = Path.Combine(userDataDirPath, "Default", "Local Storage", "leveldb");
+                    var path = Path.Combine(automationContext.EnsureUserBrowserDataDirPath(), "Default", "Local Storage", "leveldb");
                     var tokenPathes = new TeamsTokenPathesCustom(this.configuration, new List<string>() {path});
                     await CaptureTokensFromLevelDbLdbFilesAsync(tokenPathes, cancellationToken);
                     await CaptureTokensFromLevelDbLogFilesAsync(tokenPathes, cancellationToken);

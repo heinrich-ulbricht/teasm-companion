@@ -3,6 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using TeasmBrowserAutomation.Automation;
 
 #nullable enable
 
@@ -27,7 +28,7 @@ namespace TeasmBrowserAutomation.Credentials
         }
 
 
-        private async Task<ShellResult?> GetPasswordViaDialogAsync(string text)
+        private async Task<ShellResult?> AskUserForSecretViaDialogAsync(string text)
         {
             try
             {
@@ -40,80 +41,70 @@ namespace TeasmBrowserAutomation.Credentials
             }
         }
 
-        /// <summary>
-        /// Ask user for password or retrieve previously stored password. Furthermore return the path where the browser user profile should be stored when logging in.
-        /// </summary>
-        /// <param name="usernameToLogInWith">User name to ask password for</param>
-        /// <param name="tenantId">Tenant ID that will be used to create a user profile directory for that tenant</param>
-        /// <param name="discardExistingPassword">Ask the user for their password even if a stored password is present (can be used to update an expired password)</param>
-        /// <param name="tenantLoginDataDirPath_WillBeCreatedIfDoesntExist">Use this as browser user profile directory instead of generating one</param>
-        /// <returns>Password and path to directory that can be used to store the browser user profile data for the given tenant</returns>
-        public async Task<(string, string)> GetPasswordAndUserDataDirForAsync(string usernameToLogInWith, string? tenantId, bool discardExistingPassword = false, string? tenantLoginDataDirPath_WillBeCreatedIfDoesntExist = null)
+        private async Task<string?> GetSecretAsync(AutomationContext context, string monikerOfSecret, bool discardExistingSecret, string scopeId)
         {
             var isProtectDataSupported = IsProtectDataSupported();
-            if (string.IsNullOrWhiteSpace(tenantLoginDataDirPath_WillBeCreatedIfDoesntExist))
-            {
-                tenantLoginDataDirPath_WillBeCreatedIfDoesntExist = Path.Combine(Path.GetTempPath(), $"TeasmBrowserAutomation-{usernameToLogInWith}-{(string.IsNullOrWhiteSpace(tenantId) ? "default" : tenantId)}");
-            }
+            var secretStorageFileName = $"{scopeId}-{monikerOfSecret.Trim().Replace(" ", "+")}{(isProtectDataSupported ? ".txt.enc" : ".txt")}";;
+            var secretValueFilePath = Path.Combine(context.EnsureBasePathForScope(scopeId), secretStorageFileName);
 
-            string? password = null;
-            if (!Directory.Exists(tenantLoginDataDirPath_WillBeCreatedIfDoesntExist))
-            {
-                Directory.CreateDirectory(tenantLoginDataDirPath_WillBeCreatedIfDoesntExist);
-            }
-            var userPasswordFileParentDirPath = Directory.GetParent(tenantLoginDataDirPath_WillBeCreatedIfDoesntExist)?.FullName ?? tenantLoginDataDirPath_WillBeCreatedIfDoesntExist;
-            var passwordFilePath = Path.Combine(userPasswordFileParentDirPath, $"{usernameToLogInWith}-password{(isProtectDataSupported ? ".txt.enc" : ".txt")}");
-
-            if (File.Exists(passwordFilePath))
+            string? secret = null;
+            if (File.Exists(secretValueFilePath))
             {
                 if (isProtectDataSupported)
                 {
-                    var protectedPasswordBytesBase64 = File.ReadAllText(passwordFilePath);
-                    var protectedPasswordBytes = Convert.FromBase64String(protectedPasswordBytesBase64);
-                    byte[] passwordBytes;
+                    var protectedSecretBytesBase64 = File.ReadAllText(secretValueFilePath);
+                    if (protectedSecretBytesBase64 != "")
+                    {
+                        var protectedSecretBytes = Convert.FromBase64String(protectedSecretBytesBase64);
+                        byte[] secretBytes;
 #pragma warning disable CA1416 // Validate platform compatibility
-                    passwordBytes = ProtectedData.Unprotect(protectedPasswordBytes, null, DataProtectionScope.CurrentUser);
+                        secretBytes = ProtectedData.Unprotect(protectedSecretBytes, null, DataProtectionScope.CurrentUser);
 #pragma warning restore CA1416 // Validate platform compatibility
-                    password = Encoding.UTF8.GetString(passwordBytes);
+                        secret = Encoding.UTF8.GetString(secretBytes);
+                    } else 
+                    {
+                        secret = "";
+                    }
                 }
                 else
                 {
-                    password = File.ReadAllText(passwordFilePath);
+                    secret = File.ReadAllText(secretValueFilePath);
 
                 }
             }
-            if (password != null && !discardExistingPassword)
+            if (null != secret && !discardExistingSecret)
             {
-                return (password, tenantLoginDataDirPath_WillBeCreatedIfDoesntExist);
+                return secret;
             }
 
-            var promptText = $"Enter{(discardExistingPassword ? " new" : "")} password for {usernameToLogInWith} {Environment.NewLine}{Environment.NewLine}(it will be stored {(isProtectDataSupported ? "encrypted" : "IN PLAIN TEXT")} in file {Environment.NewLine}'{passwordFilePath}'):";
-            var pwResult = await GetPasswordViaDialogAsync(promptText);
-            password = pwResult?.StdOutput.ReplaceLineEndings().Replace(Environment.NewLine, "");
-            // if dialog cannot be shown: ask via termin (note: it is not very user friendly because log output interfers with password input)
-            if (null == pwResult || pwResult.UserCanceled)
+            var promptText = $"Destination tenant '{context.TenantName}': Enter{(discardExistingSecret ? " new" : "")} {monikerOfSecret} for {context.Username} {Environment.NewLine}{Environment.NewLine}(it will be stored {(isProtectDataSupported ? "encrypted" : "IN PLAIN TEXT")} in file {Environment.NewLine}'{secretValueFilePath}'):";
+            var secretResult = await AskUserForSecretViaDialogAsync(promptText);
+            secret = secretResult?.StdOutput.ReplaceLineEndings().Replace(Environment.NewLine, "");
+            // if dialog cannot be shown: ask via termin (note: it is not very user friendly because log output interfers with value input)
+            if (null == secretResult || secretResult.UserCanceled)
             {
-                password = McMaster.Extensions.CommandLineUtils.Prompt.GetPassword(promptText);
+                secret = McMaster.Extensions.CommandLineUtils.Prompt.GetPassword(promptText);
             }
-            if (string.IsNullOrWhiteSpace(password))
+            if (null == secret)
             {
-                return ("", tenantLoginDataDirPath_WillBeCreatedIfDoesntExist);
+                return null;
             }
-
+ 
+            // note: explicitly store empty input
             try
             {
-                if (isProtectDataSupported)
+                if (isProtectDataSupported && !string.IsNullOrEmpty(secret))
                 {
-                    var passwordBytes = Encoding.UTF8.GetBytes(password);
+                    var secretBytes = Encoding.UTF8.GetBytes(secret);
 #pragma warning disable CA1416 // Validate platform compatibility
-                    var protectedPasswordBytes = ProtectedData.Protect(passwordBytes, null, DataProtectionScope.CurrentUser);
+                    var protectedSecretBytes = ProtectedData.Protect(secretBytes, null, DataProtectionScope.CurrentUser);
 #pragma warning restore CA1416 // Validate platform compatibility
-                    var protectedPasswordBytesBase64 = Convert.ToBase64String(protectedPasswordBytes);
-                    File.WriteAllText(passwordFilePath, protectedPasswordBytesBase64);
+                    var protectedSecretBytesBase64 = Convert.ToBase64String(protectedSecretBytes);
+                    File.WriteAllText(secretValueFilePath, protectedSecretBytesBase64);
                 }
                 else
                 {
-                    File.WriteAllText(passwordFilePath, password);
+                    File.WriteAllText(secretValueFilePath, secret);
                 }
             }
             catch (PlatformNotSupportedException)
@@ -121,7 +112,34 @@ namespace TeasmBrowserAutomation.Credentials
                 Console.WriteLine("Could not store credentials; not supported on this platform");
             }
 
-            return (password, tenantLoginDataDirPath_WillBeCreatedIfDoesntExist);
+            return secret;
+        }
+
+        public async Task<AutomationContext> GetAutomationContextAndAskForPasswordAsync(string usernameToLogInWith, string? tenantId, string? tenantName, bool discardExistingPassword = false)
+        {
+            var context = new AutomationContext(usernameToLogInWith, tenantId, tenantName);
+            var password = await GetSecretAsync(context, "password", discardExistingPassword, context.Username);
+            context.Password = password;
+
+            return context;
+        }
+
+        public async Task<AutomationContext> CloneAndUpdatePasswordAsync(AutomationContext context, bool discardExisting)
+        {
+            var result = context.Clone();
+            result.Password = await GetSecretAsync(context, "password", discardExisting, context.Username);
+            return result;
+        }
+
+        public async Task<AutomationContext> CloneAndUpdateTotpKeyAsync(AutomationContext context, string mfaTenant, bool discardExisting)
+        {
+            var result = context.Clone();
+            var totpKey = await GetSecretAsync(context, "TOTP key (can be empty)", discardExisting, $"{context.Username}_{mfaTenant}");
+            if (null != totpKey)
+            {
+                result.TotpKey[mfaTenant] = totpKey;
+            }
+            return result;
         }
     }
 }

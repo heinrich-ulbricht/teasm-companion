@@ -26,20 +26,21 @@ namespace TeasmBrowserAutomation
             }
 
             var passwordSource = new PasswordSource();
-            var (password, userDataDirPath) = await passwordSource.GetPasswordAndUserDataDirForAsync(username, options?.TenantId);
+            // don't provide password right away - will be asked for when needed
+            var automationContext = new AutomationContext(username, options?.TenantId, options?.TenantName);
             var loginAutomation = new LoginAutomation(options?.MobileNumberForSignalMfaRelay);
             var result = await loginAutomation.LogInToTeamsAsync(
                 chromeBinaryPath: options?.ChromeBinaryPath,
                 webDriverDirPath: options?.WebDriverDirPath,
-                userDataDirPath: userDataDirPath,
-                username: username,
-                password: password,
-                getNewPasswordCallback: async () =>
+                context: automationContext,
+                getNewPasswordCallback: async (oldContext, discardExisting) =>
                 {
-                    var (newPassword, _) = await passwordSource.GetPasswordAndUserDataDirForAsync(username, options?.TenantId, true);
-                    return newPassword;
+                    return await passwordSource.CloneAndUpdatePasswordAsync(oldContext, discardExisting);
                 },
-                tenantId: options?.TenantId,
+                getNewTotpKeyCallback: async (oldContext, mfaTenant, discardExisting) =>
+                {
+                    return await passwordSource.CloneAndUpdateTotpKeyAsync(oldContext, mfaTenant, discardExisting);
+                },
                 deleteUserDataDirPathAfterLoggingIn: false);
             return (int)result;
         }

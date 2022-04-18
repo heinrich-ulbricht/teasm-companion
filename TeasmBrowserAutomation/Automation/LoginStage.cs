@@ -24,6 +24,8 @@ namespace TeasmBrowserAutomation.Automation
         MfaCodeEntry,
         // MFA page with error
         MfaCodeEntry_HasError,
+        // "Sorry, but we've trouble signing you in" - with troubleshooting banner
+        TroubleshootingBannerVisible,
         Unknown = 65535,
     }
 }

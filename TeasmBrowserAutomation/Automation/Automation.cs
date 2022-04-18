@@ -8,6 +8,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using TeasmBrowserAutomation.Mfa;
+using OtpNet;
 
 #nullable enable
 
@@ -187,6 +188,20 @@ namespace TeasmBrowserAutomation.Automation
             }
         }
 
+        public static bool IsTroubleshootingBannerVisible(IWebDriver driver)
+        {
+            try
+            {
+                var containsTroubleshootingBanner = driver.FindElements(By.Id("debugDetailsBanner")).Where(b => b.Enabled && b.Displayed).Any();
+                return containsTroubleshootingBanner;
+            }
+            catch (StaleElementReferenceException)
+            {
+                // can happen when switching between pages
+                return false;
+            }            
+        }
+
         private static LoginStage GetCurrentLoginStage(IWebDriver driver, string accountEmail, double waitSecs = 60)
         {
             var isLoginEmailPage = false;
@@ -195,9 +210,10 @@ namespace TeasmBrowserAutomation.Automation
             var isLoginCorporateVsPrivatePage = false;
             var isLoginKmsiPage = false;
             var isAuthenticatedInTeams = false;
-            var (isMfaCodeEntryPage, hasError) = (false, false);
+            var (isMfaCodeEntryPage, hasMfaError) = (false, false);
             var isPickAnAccountWithAccountPresent = false;
             var isPickAnAccountWithAccountMissing = false;
+            var isTroubleshootingBannerVisible = false;
 
             var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(waitSecs));
             if (!wait.Until(webDriver =>
@@ -207,13 +223,19 @@ namespace TeasmBrowserAutomation.Automation
                 || (isLoginCorporateVsPrivatePage = IsLoginCorporateVsPrivatePage(webDriver))
                 || (isLoginKmsiPage = IsLoginKmsiPage(webDriver))
                 || (isAuthenticatedInTeams = IsAuthenticatedInTeams(webDriver))
-                || ((isMfaCodeEntryPage, hasError) = IsMfaCodeEntryPage(webDriver)).Item1
+                || ((isMfaCodeEntryPage, hasMfaError) = IsMfaCodeEntryPage(webDriver)).Item1
                 || (isPickAnAccountWithAccountPresent = IsPickAnAccountPageWithAccountPresent(webDriver, accountEmail))
                 || (isPickAnAccountWithAccountMissing = IsPickAnAccountPageWithAccountMissing(webDriver, accountEmail))
+                || (isTroubleshootingBannerVisible = IsTroubleshootingBannerVisible(webDriver))
                 ))
             {
                 Debug.WriteLine("Could find neither a login page nor Teams");
                 return LoginStage.Unknown;
+            }
+
+            if (isTroubleshootingBannerVisible)
+            {
+                return LoginStage.TroubleshootingBannerVisible;
             }
 
             if (isLoginEmailPage)
@@ -256,11 +278,11 @@ namespace TeasmBrowserAutomation.Automation
                 return LoginStage.PickAnAccountWithAccountMissing;
             }
 
-            if (isMfaCodeEntryPage && !hasError)
+            if (isMfaCodeEntryPage && !hasMfaError)
             {
                 return LoginStage.MfaCodeEntry;
             }
-            if (isMfaCodeEntryPage && hasError)
+            if (isMfaCodeEntryPage && hasMfaError)
             {
                 return LoginStage.MfaCodeEntry_HasError;
             }
@@ -272,9 +294,9 @@ namespace TeasmBrowserAutomation.Automation
         {
             var currentLoginStage = GetCurrentLoginStage(driver, accountEmail);
             var maxRetryTimeSpan = TimeSpan.FromSeconds(30);
-            if (oldStage == LoginStage.MfaCodeEntry)
+            if (oldStage == LoginStage.MfaCodeEntry || oldStage == LoginStage.PasswordError)
             {
-                maxRetryTimeSpan = TimeSpan.FromMinutes(5); // give more time for MFA code entry; may need to test and adjust
+                maxRetryTimeSpan = TimeSpan.FromMinutes(5); // give more time for MFA code/password entry; may need to test and adjust
             }
             var startTime = DateTime.Now;
             while (currentLoginStage == oldStage)
@@ -305,11 +327,9 @@ namespace TeasmBrowserAutomation.Automation
         public async Task<LoginStage> LogInToTeamsAsync(
             string? chromeBinaryPath,
             string? webDriverDirPath,
-            string userDataDirPath,
-            string username,
-            string password,
-            Func<Task<string>> getNewPasswordCallback,
-            string? tenantId,
+            AutomationContext context,
+            Func<AutomationContext, bool, Task<AutomationContext>> getNewPasswordCallback,
+            Func<AutomationContext, string, bool, Task<AutomationContext>> getNewTotpKeyCallback,
             bool deleteUserDataDirPathAfterLoggingIn = true)
         {
             var finalLoginStage = LoginStage.Unknown;
@@ -317,7 +337,7 @@ namespace TeasmBrowserAutomation.Automation
             {
                 await _signalRelay.RegisterMessageListenerAsync();
             }
-            Directory.CreateDirectory(userDataDirPath);
+            var userDataDirPath = context.EnsureUserBrowserDataDirPath();
             try
             {
                 var options = new ChromeOptions
@@ -335,13 +355,13 @@ namespace TeasmBrowserAutomation.Automation
                     WebDriverWait wait10 = new(driver, TimeSpan.FromSeconds(10));
                     WebDriverWait wait60 = new(driver, TimeSpan.FromSeconds(60));
                     // note: a set login_hint used to skip the user name entry page of the login experience; lately it just pre-fills the user name field
-                    var teamsUrl = $"https://teams.microsoft.com/_#/apps?login_hint={username}";
-                    if (!string.IsNullOrEmpty(tenantId))
+                    var teamsUrl = $"https://teams.microsoft.com/_#/apps?login_hint={context.Username}";
+                    if (!string.IsNullOrEmpty(context.TenantId) && context.TenantId != AutomationContext.DefaultTenantId)
                     {
-                        teamsUrl = $"{teamsUrl}&tenantId={tenantId}";
+                        teamsUrl = $"{teamsUrl}&tenantId={context.TenantId}";
                     }
                     driver.Navigate().GoToUrl(teamsUrl);
-                    finalLoginStage = await TryAutomatedLoginAsync(username, password, tenantId, driver, getNewPasswordCallback);
+                    finalLoginStage = await TryAutomatedLoginAsync(context, driver, getNewPasswordCallback, getNewTotpKeyCallback);
 
                     if (finalLoginStage == LoginStage.Teams)
                     {
@@ -356,7 +376,7 @@ namespace TeasmBrowserAutomation.Automation
                 {
                     if (e.Message.Contains("user data directory is already in use", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        Debug.WriteLine($"Cannot start login automation, please close any open browsers for account {username}");
+                        Debug.WriteLine($"Cannot start login automation, please close any open browsers for account {context.Username}");
                     }
                 }
             }
@@ -371,9 +391,13 @@ namespace TeasmBrowserAutomation.Automation
             return finalLoginStage;
         }
 
-        private async Task<LoginStage> TryAutomatedLoginAsync(string username, string password, string? tenantId, IWebDriver driver, Func<Task<string>> getNewPasswordCallback)
+        private async Task<LoginStage> TryAutomatedLoginAsync(
+            AutomationContext context, 
+            IWebDriver driver, 
+            Func<AutomationContext, bool, Task<AutomationContext>> getNewPasswordCallback,
+            Func<AutomationContext, string, bool, Task<AutomationContext>> getNewTotpKeyCallback)
         {
-            LoginStage currentLoginStage = GetCurrentLoginStage(driver, username, 60);
+            LoginStage currentLoginStage = GetCurrentLoginStage(driver, context.Username, 60);
             while (currentLoginStage != LoginStage.Teams)
             {
                 try
@@ -382,7 +406,7 @@ namespace TeasmBrowserAutomation.Automation
                     {
                         case LoginStage.PickAnAccountWithAccountPresent:
                             // the tile should be present or we wouldn't be in this stage
-                            var accountEmailTile = driver.FindElements(By.CssSelector($"[data-test-id='{username}']")).Where(b => b.Enabled && b.Displayed).SingleOrDefault();
+                            var accountEmailTile = driver.FindElements(By.CssSelector($"[data-test-id='{context.Username}']")).Where(b => b.Enabled && b.Displayed).SingleOrDefault();
                             if (null == accountEmailTile)
                             {
                                 continue;
@@ -394,14 +418,19 @@ namespace TeasmBrowserAutomation.Automation
                         case LoginStage.AccountEmail:
                             var emailFieldInstance = driver.FindElement(emailField);
                             emailFieldInstance.Clear(); // email address might be set depending on query parameters; ignore and enter anew
-                            emailFieldInstance.SendKeys(username);
+                            emailFieldInstance.SendKeys(context.Username);
                             var submitButton = driver.FindElement(nextButton);
                             submitButton.Click();
                             break;
                         case LoginStage.Password:
+                            if (null == context.Password)
+                            {
+                                context = await getNewPasswordCallback(context, false);
+                            }
+
                             var passwordFieldInstance = driver.FindElement(passwordField);
                             passwordFieldInstance.Clear();
-                            passwordFieldInstance.SendKeys(password);
+                            passwordFieldInstance.SendKeys(context.Password);
                             submitButton = driver.FindElement(nextButton);
                             submitButton.Click();
                             break;
@@ -417,15 +446,37 @@ namespace TeasmBrowserAutomation.Automation
                             submitButton.Click();
                             break;
                         case LoginStage.MfaCodeEntry:
-                            var mfaCode = "";
-                            if (null != _signalRelay && (await _signalRelay.IsRelayAvailableAsync()))
+                            var url = new Uri(driver.Url);
+                            // "common" for home tenant, otherwise other tenant; note: multiple MFAs might be necessary, e.g. first home tenant then external tenant
+                            var mfaTenant = url.AbsolutePath.Split("/", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+
+                            string? totpKey = null;
+                            context.TotpKey.TryGetValue(mfaTenant, out totpKey);
+                            if (null == totpKey)
                             {
-                                mfaCode = await _signalRelay.SendMessageAndWaitForReplyAsync($"Enter MFA code for account '{username}' and tenant '{(string.IsNullOrEmpty(tenantId) ? "default" : tenantId)}'", m => true);
+                                context = await getNewTotpKeyCallback(context, mfaTenant, false);
                             }
-                            else
+
+                            var mfaCode = "";
+                            
+                            if (context.TotpKey.TryGetValue(mfaTenant, out totpKey))
                             {
-                                // don't ask in console - just let the user enter the code via UI
-                                //mfaCode = McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"Enter MFA code for account '{username}' and tenant '{(string.IsNullOrEmpty(tenantId) ? "default" : tenantId)}':");
+                                var base32Bytes = Base32Encoding.ToBytes(totpKey);
+                                var totp = new Totp(base32Bytes);
+                                mfaCode = totp.ComputeTotp();
+                            }
+
+                            if (string.IsNullOrEmpty(mfaCode))
+                            {
+                                if (null != _signalRelay && (await _signalRelay.IsRelayAvailableAsync()))
+                                {
+                                    mfaCode = await _signalRelay.SendMessageAndWaitForReplyAsync($"Enter MFA code for account '{context.Username}' and tenant '{context.TenantName}' ('{context.TenantId}')", m => true);
+                                }
+                                else
+                                {
+                                    // don't ask in console - just let the user enter the code via UI
+                                    //mfaCode = McMaster.Extensions.CommandLineUtils.Prompt.GetPassword($"Enter MFA code for account '{username}' and tenant '{(string.IsNullOrEmpty(tenantId) ? "default" : tenantId)}':");
+                                }
                             }
                             var mfaCodeInputField = driver.FindElement(By.Id("idTxtBx_SAOTCC_OTC"));
 
@@ -445,13 +496,13 @@ namespace TeasmBrowserAutomation.Automation
                             if (null != getNewPasswordCallback)
                             {
                                 Debug.WriteLine("Wrong password, please enter valid one");
-                                var newPassword = await getNewPasswordCallback();
-                                if (newPassword != password && !string.IsNullOrEmpty(newPassword))
+                                var newContext = await getNewPasswordCallback(context, true);
+                                if (newContext.Password != context.Password && !string.IsNullOrEmpty(newContext.Password))
                                 {
-                                    password = newPassword;
+                                    context = newContext;
                                     passwordFieldInstance = driver.FindElement(passwordField);
                                     passwordFieldInstance.Clear();
-                                    passwordFieldInstance.SendKeys(password);
+                                    passwordFieldInstance.SendKeys(context.Password);
                                     submitButton = driver.FindElement(nextButton);
                                     submitButton.Click();
                                 }
@@ -465,7 +516,7 @@ namespace TeasmBrowserAutomation.Automation
                     await Task.Delay(TimeSpan.FromMilliseconds(500));
                     continue;
                 }
-                var newLoginStage = WaitForLoginStageToChange(driver, currentLoginStage, username);
+                var newLoginStage = WaitForLoginStageToChange(driver, currentLoginStage, context.Username);
                 if (newLoginStage == currentLoginStage)
                 {
                     Debug.WriteLine("Could not change login stage, something is stuck");
@@ -475,6 +526,12 @@ namespace TeasmBrowserAutomation.Automation
                 if (currentLoginStage == LoginStage.Unknown)
                 {
                     Debug.WriteLine("Cannot determine current login stage, something is new");
+                    break;
+                }
+
+                if (currentLoginStage == LoginStage.TroubleshootingBannerVisible)
+                {
+                    Debug.WriteLine("There was an error, cannot log in automatically; see troubleshooting banner for details");
                     break;
                 }
             }

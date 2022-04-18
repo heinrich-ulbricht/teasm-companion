@@ -16,6 +16,8 @@ namespace TeasmBrowserAutomation.Credentials
         public string? WebDriverDirPath { get; set; }
         [Option('t', "tenant-id", Required = false, HelpText = "Tenant ID (GUID or tenant.onmicrosoft.com)")]
         public string? TenantId { get; set; }
+        [Option('n', "tenant-name", Required = false, HelpText = "Tenant name")]
+        public string? TenantName { get; set; }
 
         [Option('m', "mobile-number", Required = false, HelpText = "Mobile number for MFA Relay via Signal Messenger ('+4915701234567')")]
         public string? MobileNumberForSignalMfaRelay {get; set;}
