@@ -24,8 +24,8 @@ namespace TeasmCompanion
         private readonly ReplaySubject<TeamsDataContext> RetrieveChatsPipeline = new ReplaySubject<TeamsDataContext>();
 
         public TeamsMonitor(
-            ILogger logger, 
-            TeamsTokenRetriever tokens, 
+            ILogger logger,
+            TeamsTokenRetriever tokens,
             TeamsUserTenantsRetriever tenantsRetriever,
             TeamsChatRetriever teamsChatReceiver,
             TeamsUserTenantsRetriever userTenantsRetriever,
@@ -118,7 +118,7 @@ namespace TeasmCompanion
 
                     var contextsWithTokens = from context in contexts
                                              join identity in identities
-                                         on context.Tenant.UserId equals identity.UserId
+                                             on context.Tenant.UserId equals identity.UserId
                                              where identity[TeamsTokenType.MyChatsAuthHeader] != null && identity[TeamsTokenType.MyTeamsAuthHeader] != null
                                              && !tenantBlacklistKeywords.Where(keyword => context.Tenant.TenantName.Contains(keyword, StringComparison.InvariantCultureIgnoreCase)).Any()
                                              select new
